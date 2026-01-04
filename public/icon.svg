@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <!-- 背景渐变 - 浅粉色 -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fce7f3"/>
+      <stop offset="100%" style="stop-color:#fbcfe8"/>
+    </linearGradient>
+    
+    <!-- 便签纸渐变 -->
+    <linearGradient id="paperGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#fefce8"/>
+    </linearGradient>
+    
+    <!-- 折角渐变 -->
+    <linearGradient id="foldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef08a"/>
+      <stop offset="100%" style="stop-color:#facc15"/>
+    </linearGradient>
+    
+    <!-- 糖果主体渐变 -->
+    <linearGradient id="candyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f9a8d4"/>
+      <stop offset="50%" style="stop-color:#f472b6"/>
+      <stop offset="100%" style="stop-color:#ec4899"/>
+    </linearGradient>
+    
+    <!-- 糖纸渐变 -->
+    <linearGradient id="wrapperGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbcfe8"/>
+      <stop offset="100%" style="stop-color:#f9a8d4"/>
+    </linearGradient>
+    
+    <!-- 阴影 -->
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect x="16" y="16" width="224" height="224" rx="48" fill="url(#bgGradient)"/>
+  
+  <!-- 便签纸 -->
+  <g filter="url(#shadow)">
+    <path d="M40 44 L216 44 L216 176 L176 216 L40 216 Z" fill="url(#paperGradient)"/>
+    <path d="M176 216 L176 176 L216 176 Z" fill="url(#foldGradient)"/>
+  </g>
+  
+  <!-- 便签线条 -->
+  <line x1="56" y1="72" x2="140" y2="72" stroke="#fde68a" stroke-width="4" stroke-linecap="round"/>
+  <line x1="56" y1="92" x2="180" y2="92" stroke="#fde68a" stroke-width="4" stroke-linecap="round"/>
+  <line x1="56" y1="112" x2="150" y2="112" stroke="#fde68a" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- 糖果整体 - 旋转45度 -->
+  <g transform="translate(128, 156) rotate(-35)">
+    <!-- 左边糖纸 - 心形/花瓣形 -->
+    <path d="M-40 0 
+             Q-52 -14 -60 -10 
+             Q-68 -6 -66 0 
+             Q-68 6 -60 10 
+             Q-52 14 -40 0 Z" 
+          fill="url(#wrapperGradient)" 
+          stroke="#9d174d" 
+          stroke-width="5"/>
+    
+    <!-- 右边糖纸 - 心形/花瓣形 -->
+    <path d="M40 0 
+             Q52 -14 60 -10 
+             Q68 -6 66 0 
+             Q68 6 60 10 
+             Q52 14 40 0 Z" 
+          fill="url(#wrapperGradient)" 
+          stroke="#9d174d" 
+          stroke-width="5"/>
+    
+    <!-- 糖果圆形主体 -->
+    <circle cx="0" cy="0" r="36" fill="url(#candyGradient)" stroke="#9d174d" stroke-width="6"/>
+    
+    <!-- 高光 -->
+    <ellipse cx="-10" cy="-12" rx="14" ry="9" fill="#fdf2f8" opacity="0.7"/>
+    <ellipse cx="-8" cy="-10" rx="8" ry="5" fill="#fff" opacity="0.9"/>
+  </g>
+</svg>
