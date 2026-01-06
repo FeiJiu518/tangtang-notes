@@ -9,7 +9,9 @@ import {
   FileText, Archive, Clock, Bell, Map, Globe, Zap, Award, Target, Unlock,
   AlertCircle, Receipt, CircleDot, CheckCircle2, FileWarning, ImagePlus,
   ChevronLeft, ChevronRight, BellOff, BellRing, Volume2, VolumeX,
-  LogOut, User, UserPlus, Minus, Square, Maximize2
+  LogOut, User, UserPlus, Minus, Square, Maximize2, ChevronDown,
+  Upload, File, FileImage, Paperclip, Download, ArrowUpDown, CalendarDays,
+  ArrowUp, ArrowDown, Diamond, XCircle, RefreshCw, Crown, GripVertical, Filter
 } from 'lucide-react';
 
 // 可选图标库
@@ -59,6 +61,8 @@ const ICON_OPTIONS = [
   { name: 'Zap', icon: Zap },
   { name: 'Award', icon: Award },
   { name: 'Target', icon: Target },
+  { name: 'Diamond', icon: Diamond },
+  { name: 'Crown', icon: Crown },
 ];
 
 // 可选颜色
@@ -83,20 +87,39 @@ const COLOR_OPTIONS = [
   { name: 'rose', bg: 'bg-rose-100', text: 'text-rose-600', ring: 'ring-rose-400' },
 ];
 
-// 便签类型配置
+// 便签类型配置（含默认图标和颜色）
 const NOTE_TYPES = [
-  { id: 'simple', name: '简单文本', description: '标题 + 内容 + 图片', defaultPrivate: false, supportsImages: true },
-  { id: 'password', name: '账号密码', description: '账号 + 密码（可隐藏）', defaultPrivate: true, supportsImages: false },
-  { id: 'link', name: '网址链接', description: '可点击跳转的链接', defaultPrivate: false, supportsImages: false },
-  { id: 'date', name: '日期提醒', description: '显示倒计时 + 提醒', defaultPrivate: false, supportsImages: false },
-  { id: 'expense', name: '报销记录', description: '金额、发票、状态 + 图片', defaultPrivate: false, supportsImages: true },
+  { id: 'simple', name: '简单文本', description: '标题 + 内容 + 图片', defaultPrivate: false, supportsImages: true, defaultIcon: 'StickyNote', defaultColor: 'gray' },
+  { id: 'password', name: '账号密码', description: '账号 + 密码（可隐藏）', defaultPrivate: true, supportsImages: false, defaultIcon: 'Key', defaultColor: 'amber' },
+  { id: 'link', name: '网址链接', description: '可点击跳转的链接', defaultPrivate: false, supportsImages: false, defaultIcon: 'Link', defaultColor: 'blue' },
+  { id: 'date', name: '日期提醒', description: '显示倒计时 + 提醒', defaultPrivate: false, supportsImages: false, defaultIcon: 'Calendar', defaultColor: 'rose' },
+  { id: 'expense', name: '报销记录', description: '金额、发票、状态 + 图片', defaultPrivate: false, supportsImages: true, defaultIcon: 'Receipt', defaultColor: 'emerald' },
+  { id: 'membership', name: '会员管理', description: '会员到期提醒、费用统计', defaultPrivate: false, supportsImages: false, defaultIcon: 'Diamond', defaultColor: 'violet' },
 ];
 
 // 报销状态
 const EXPENSE_STATUS = [
   { id: 'not_invoiced', name: '未开发票', color: 'text-orange-600', bg: 'bg-orange-100', icon: FileWarning },
+  { id: 'applied', name: '已申请未出票', color: 'text-purple-600', bg: 'bg-purple-100', icon: Clock },
   { id: 'invoiced', name: '已开发票未报销', color: 'text-blue-600', bg: 'bg-blue-100', icon: CircleDot },
   { id: 'reimbursed', name: '已报销', color: 'text-green-600', bg: 'bg-green-100', icon: CheckCircle2 },
+];
+
+// 会员类型选项
+const MEMBERSHIP_TYPES = [
+  { id: 'monthly_auto', name: '连续包月', days: 30, unit: '月' },
+  { id: 'yearly_auto', name: '连续包年', days: 365, unit: '年' },
+  { id: 'monthly', name: '月卡', days: 30, unit: '月' },
+  { id: 'quarterly', name: '季卡', days: 90, unit: '季' },
+  { id: 'yearly', name: '年卡', days: 365, unit: '年' },
+  { id: 'custom', name: '自定义', days: 0, unit: '天' },
+];
+
+// 会员状态（自动计算）
+const MEMBERSHIP_STATUS = [
+  { id: 'active', name: '生效中', color: 'text-green-600', bg: 'bg-green-100', icon: CheckCircle2 },
+  { id: 'expiring', name: '即将到期', color: 'text-orange-600', bg: 'bg-orange-100', icon: AlertCircle },
+  { id: 'expired', name: '已过期', color: 'text-gray-500', bg: 'bg-gray-100', icon: XCircle },
 ];
 
 // 默认类别
@@ -105,6 +128,7 @@ const DEFAULT_CATEGORIES = [
   { id: 'link', name: '网址收藏', iconName: 'Link', color: 'blue', noteType: 'link' },
   { id: 'date', name: '重要日期', iconName: 'Calendar', color: 'rose', noteType: 'date' },
   { id: 'expense', name: '报销记录', iconName: 'Receipt', color: 'emerald', noteType: 'expense' },
+  { id: 'membership', name: '会员管理', iconName: 'Diamond', color: 'violet', noteType: 'membership' },
   { id: 'note', name: '通用备忘', iconName: 'StickyNote', color: 'gray', noteType: 'simple' },
 ];
 
@@ -119,6 +143,54 @@ const SECURITY_QUESTIONS = [
   { id: 'movie', question: '你最喜欢的电影是？' },
   { id: 'food', question: '你最喜欢的食物是？' },
 ];
+
+// ==================== 密码加密函数 ====================
+
+// 使用 SHA-256 哈希加密密码（单向，用于存储）
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + 'tangtang_salt_2024'); // 添加盐值增加安全性
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+// 验证密码是否匹配
+async function verifyPassword(inputPassword, storedHash) {
+  const inputHash = await hashPassword(inputPassword);
+  return inputHash === storedHash;
+}
+
+// 简单对称加密（用于"记住密码"功能，需要能解密）
+const ENCRYPT_KEY = 'tangtang_encrypt_key_2024';
+
+function encryptPassword(password) {
+  if (!password) return '';
+  let result = '';
+  for (let i = 0; i < password.length; i++) {
+    const charCode = password.charCodeAt(i) ^ ENCRYPT_KEY.charCodeAt(i % ENCRYPT_KEY.length);
+    result += String.fromCharCode(charCode);
+  }
+  // 转为 base64 避免特殊字符问题
+  return btoa(encodeURIComponent(result));
+}
+
+function decryptPassword(encrypted) {
+  if (!encrypted) return '';
+  try {
+    const decoded = decodeURIComponent(atob(encrypted));
+    let result = '';
+    for (let i = 0; i < decoded.length; i++) {
+      const charCode = decoded.charCodeAt(i) ^ ENCRYPT_KEY.charCodeAt(i % ENCRYPT_KEY.length);
+      result += String.fromCharCode(charCode);
+    }
+    return result;
+  } catch {
+    // 如果解密失败，可能是旧的明文格式，直接返回
+    return encrypted;
+  }
+}
 
 // ==================== 验证工具函数 ====================
 
@@ -190,7 +262,7 @@ function validatePassword(password) {
 
 // ==================== 登录注册组件 ====================
 
-function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
+function AuthPage({ onLogin, registeredUsers, setRegisteredUsers, savedAccounts, setSavedAccounts }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot'
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -200,9 +272,53 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // 记住密码相关（账号自动记住，密码需要勾选）
+  const [rememberPassword, setRememberPassword] = useState(false);
+  const [showSavedAccounts, setShowSavedAccounts] = useState(false);
+  const savedAccountsRef = useRef(null);
+  
   // 安全问题相关
   const [securityQuestion, setSecurityQuestion] = useState('school');
   const [securityAnswer, setSecurityAnswer] = useState('');
+  
+  // 初始化：如果有保存的账号，自动填充最近使用的
+  useEffect(() => {
+    if (savedAccounts.length > 0 && mode === 'login' && !username) {
+      const lastAccount = savedAccounts[0]; // 最近使用的账号在最前面
+      setUsername(lastAccount.username);
+      if (lastAccount.rememberPassword) {
+        // 支持新旧两种格式
+        const savedPassword = lastAccount.encryptedPassword 
+          ? decryptPassword(lastAccount.encryptedPassword) 
+          : lastAccount.password || '';
+        if (savedPassword) {
+          setPassword(savedPassword);
+          setRememberPassword(true);
+        }
+      }
+    }
+  }, [savedAccounts, mode]);
+  
+  // 检查账号是否已在其他窗口登录
+  const checkUserSession = async (userId) => {
+    try {
+      // 优先使用 Electron API
+      if (window.electronAPI?.checkUserSession) {
+        return await window.electronAPI.checkUserSession(userId);
+      }
+      // 浏览器环境的备用方案
+      const sessionsData = localStorage.getItem('activeLoginSession');
+      if (sessionsData) {
+        const sessions = JSON.parse(sessionsData);
+        if (sessions[userId]) {
+          return true;
+        }
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
   
   // 忘记密码相关
   const [forgotStep, setForgotStep] = useState(1); // 1: 输入用户名, 2: 回答问题, 3: 设置新密码
@@ -215,7 +331,18 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
   const [usernameFocused, setUsernameFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   
-  const handleSubmit = (e) => {
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (savedAccountsRef.current && !savedAccountsRef.current.contains(e.target)) {
+        setShowSavedAccounts(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+  
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
     
@@ -226,13 +353,76 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
         setErrors({ general: '用户名不存在' });
         return;
       }
-      if (user.password !== password) {
+      
+      // 验证密码（支持新旧两种格式）
+      let passwordMatch = false;
+      if (user.passwordHash) {
+        // 新格式：使用哈希验证
+        passwordMatch = await verifyPassword(password, user.passwordHash);
+      } else {
+        // 旧格式：明文比对（兼容旧数据）
+        passwordMatch = user.password === password;
+      }
+      
+      if (!passwordMatch) {
         setErrors({ general: '密码错误' });
         return;
       }
       
+      // 检查该账号是否已在其他窗口登录
+      const isLoggedIn = await checkUserSession(user.id);
+      if (isLoggedIn) {
+        setErrors({ general: '该账号已在其他窗口登录，请先关闭其他窗口' });
+        return;
+      }
+      
       setIsSubmitting(true);
+      
+      // 尝试获取用户头像
+      let userAvatar = null;
+      try {
+        if (window.electronAPI) {
+          const savedData = await window.electronAPI.loadData();
+          const userKey = `userData_${user.id}`;
+          if (savedData && savedData[userKey] && savedData[userKey].avatar) {
+            userAvatar = savedData[userKey].avatar;
+          }
+        } else {
+          const userKey = `userData_${user.id}`;
+          const stored = localStorage.getItem(userKey);
+          if (stored) {
+            const userData = JSON.parse(stored);
+            userAvatar = userData.avatar || null;
+          }
+        }
+      } catch (error) {
+        console.error('获取头像失败:', error);
+      }
+      
       setTimeout(() => {
+        // 自动保存账号（账号始终保存，密码根据勾选决定）
+        const existingIndex = savedAccounts.findIndex(a => a.username === username);
+        const accountData = {
+          username,
+          encryptedPassword: rememberPassword ? encryptPassword(password) : '', // 加密存储
+          rememberPassword: rememberPassword,
+          lastUsed: Date.now(),
+          avatar: userAvatar // 保存头像
+        };
+        
+        let updatedAccounts;
+        if (existingIndex >= 0) {
+          // 更新已有账号，移到最前面
+          updatedAccounts = [
+            accountData,
+            ...savedAccounts.filter((_, i) => i !== existingIndex)
+          ];
+        } else {
+          // 新账号，添加到最前面
+          updatedAccounts = [accountData, ...savedAccounts];
+        }
+        setSavedAccounts(updatedAccounts);
+        
         onLogin(user);
       }, 500);
     } else if (mode === 'register') {
@@ -268,12 +458,17 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
       }
       
       setIsSubmitting(true);
+      
+      // 加密密码和安全问题答案
+      const passwordHash = await hashPassword(password);
+      const securityAnswerHash = await hashPassword(securityAnswer.trim().toLowerCase());
+      
       const newUser = {
         id: Date.now(),
         username,
-        password,
+        passwordHash, // 使用哈希存储密码
         securityQuestion,
-        securityAnswer: securityAnswer.trim().toLowerCase(),
+        securityAnswerHash, // 使用哈希存储答案
         createdAt: new Date().toISOString()
       };
       
@@ -295,7 +490,9 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
       return;
     }
     
-    if (!user.securityQuestion || !user.securityAnswer) {
+    // 检查是否设置了安全问题（支持新旧格式）
+    const hasSecurityQuestion = user.securityQuestion && (user.securityAnswerHash || user.securityAnswer);
+    if (!hasSecurityQuestion) {
       setErrors({ general: '该账号未设置安全问题，无法找回密码' });
       return;
     }
@@ -305,11 +502,22 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
   };
   
   // 忘记密码 - 验证安全问题
-  const handleForgotVerify = (e) => {
+  const handleForgotVerify = async (e) => {
     e.preventDefault();
     setErrors({});
     
-    if (forgotAnswer.trim().toLowerCase() !== forgotUser.securityAnswer) {
+    const inputAnswer = forgotAnswer.trim().toLowerCase();
+    let answerMatch = false;
+    
+    if (forgotUser.securityAnswerHash) {
+      // 新格式：哈希比对
+      answerMatch = await verifyPassword(inputAnswer, forgotUser.securityAnswerHash);
+    } else {
+      // 旧格式：明文比对
+      answerMatch = inputAnswer === forgotUser.securityAnswer;
+    }
+    
+    if (!answerMatch) {
       setErrors({ general: '答案错误' });
       return;
     }
@@ -318,7 +526,7 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
   };
   
   // 忘记密码 - 设置新密码
-  const handleForgotReset = (e) => {
+  const handleForgotReset = async (e) => {
     e.preventDefault();
     setErrors({});
     
@@ -333,9 +541,14 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
       return;
     }
     
-    // 更新密码
+    // 加密新密码
+    const newPasswordHash = await hashPassword(newPassword);
+    
+    // 更新密码（使用新的哈希格式，删除旧的明文密码）
     const updatedUsers = registeredUsers.map(u => 
-      u.id === forgotUser.id ? { ...u, password: newPassword } : u
+      u.id === forgotUser.id 
+        ? { ...u, passwordHash: newPasswordHash, password: undefined } 
+        : u
     );
     setRegisteredUsers(updatedUsers);
     
@@ -356,6 +569,44 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
     setNewPassword('');
     setConfirmNewPassword('');
     setErrors({});
+    setRememberPassword(false);
+    setShowSavedAccounts(false);
+  };
+  
+  // 选择已保存的账号
+  const handleSelectSavedAccount = (account) => {
+    setUsername(account.username);
+    // 如果之前勾选了记住密码，自动填充密码
+    if (account.rememberPassword) {
+      // 支持新旧两种格式
+      const savedPassword = account.encryptedPassword 
+        ? decryptPassword(account.encryptedPassword) 
+        : account.password || '';
+      if (savedPassword) {
+        setPassword(savedPassword);
+        setRememberPassword(true);
+      } else {
+        setPassword('');
+        setRememberPassword(false);
+      }
+    } else {
+      setPassword('');
+      setRememberPassword(false);
+    }
+    setShowSavedAccounts(false);
+  };
+  
+  // 删除已保存的账号
+  const handleDeleteSavedAccount = (e, accountUsername) => {
+    e.stopPropagation();
+    const newSavedAccounts = savedAccounts.filter(a => a.username !== accountUsername);
+    setSavedAccounts(newSavedAccounts);
+    // 如果删除的是当前输入框中的账号，清空输入
+    if (username === accountUsername) {
+      setUsername('');
+      setPassword('');
+      setRememberPassword(false);
+    }
   };
   
   const switchMode = (newMode) => {
@@ -541,8 +792,8 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
         </div>
       )}
       
-      <div className="flex-1 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden my-auto">
         {/* 顶部装饰 */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-10 text-center">
           <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -613,17 +864,78 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
                 {/* 用户名输入 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">用户名</label>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    onFocus={() => setUsernameFocused(true)}
-                    onBlur={() => setUsernameFocused(false)}
-                    placeholder="请输入用户名"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
-                      errors.username ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500'
-                    }`}
-                  />
+                  <div className="relative" ref={savedAccountsRef}>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      onFocus={() => {
+                        setUsernameFocused(true);
+                        if (mode === 'login' && savedAccounts.length > 0) {
+                          setShowSavedAccounts(true);
+                        }
+                      }}
+                      onBlur={() => setUsernameFocused(false)}
+                      placeholder="请输入用户名"
+                      className={`w-full px-4 py-2.5 ${mode === 'login' && savedAccounts.length > 0 ? 'pr-10' : ''} border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                        errors.username ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500'
+                      }`}
+                    />
+                    {mode === 'login' && savedAccounts.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSavedAccounts(!showSavedAccounts)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <ChevronDown size={18} className={`transition-transform ${showSavedAccounts ? 'rotate-180' : ''}`} />
+                      </button>
+                    )}
+                    
+                    {/* 已保存账号下拉列表 */}
+                    {mode === 'login' && showSavedAccounts && savedAccounts.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <div className="p-2 border-b border-gray-100">
+                          <span className="text-xs text-gray-500">已保存的账号</span>
+                        </div>
+                        {savedAccounts.map((account, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => handleSelectSavedAccount(account)}
+                            className={`px-3 py-2.5 hover:bg-blue-50 cursor-pointer flex items-center justify-between group ${
+                              account.username === username ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {account.avatar ? (
+                                <img 
+                                  src={account.avatar} 
+                                  alt={account.username} 
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                  <User size={14} className="text-white" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="text-sm font-medium text-gray-800">{account.username}</p>
+                                <p className="text-xs text-gray-400">
+                                  {account.rememberPassword ? '已记住密码' : '未记住密码'}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => handleDeleteSavedAccount(e, account.username)}
+                              className="p-1.5 rounded-md hover:bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="删除此账号"
+                            >
+                              <X size={14} className="text-gray-400 hover:text-red-500" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="mt-1 min-h-[18px]">
                     {errors.username ? (
                       <span className="text-red-500 text-xs">{errors.username}</span>
@@ -664,6 +976,21 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers }) {
                     )}
                   </div>
                 </div>
+                
+                {/* 记住密码（仅登录时显示） */}
+                {mode === 'login' && (
+                  <div className="flex items-center">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={rememberPassword}
+                        onChange={(e) => setRememberPassword(e.target.checked)}
+                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                      />
+                      <span className="text-sm text-gray-600">记住密码</span>
+                    </label>
+                  </div>
+                )}
                 
                 {/* 确认密码（仅注册时显示） */}
                 {mode === 'register' && (
@@ -789,6 +1116,35 @@ function getDaysRemaining(dateStr) {
   return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
 }
 
+// 获取会员状态
+function getMembershipStatus(endDate) {
+  const days = getDaysRemaining(endDate);
+  if (days < 0) return 'expired';
+  if (days <= 7) return 'expiring';
+  return 'active';
+}
+
+// 计算会员累计花费
+function calculateMembershipTotalCost(note) {
+  if (!note.startDate || !note.price) return note.price || 0;
+  
+  const start = new Date(note.startDate);
+  const today = new Date();
+  const membershipType = MEMBERSHIP_TYPES.find(t => t.id === note.membershipType);
+  
+  if (!membershipType || membershipType.id === 'custom') {
+    // 自定义类型，返回单价
+    return note.price;
+  }
+  
+  // 计算已经过了多少个周期
+  const daysPassed = Math.max(0, Math.ceil((today - start) / (1000 * 60 * 60 * 24)));
+  const cycleDays = membershipType.days;
+  const cycles = Math.ceil(daysPassed / cycleDays);
+  
+  return note.price * Math.max(1, cycles);
+}
+
 function formatTime(timeStr) {
   if (!timeStr) return '';
   const [h, m, s] = timeStr.split(':');
@@ -887,9 +1243,232 @@ function ImageThumbnails({ images, onImageClick }) {
   );
 }
 
-// 图片上传组件
+// 获取文件图标
+function getFileIcon(fileName) {
+  const ext = fileName.split('.').pop().toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) return FileImage;
+  if (['pdf'].includes(ext)) return FileText;
+  if (['doc', 'docx'].includes(ext)) return FileText;
+  if (['txt'].includes(ext)) return FileText;
+  return File;
+}
+
+// 获取文件类型标签
+function getFileTypeLabel(fileName) {
+  const ext = fileName.split('.').pop().toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) return '图片';
+  if (['pdf'].includes(ext)) return 'PDF';
+  if (['doc', 'docx'].includes(ext)) return 'Word';
+  if (['txt'].includes(ext)) return '文本';
+  return '文件';
+}
+
+// 格式化文件大小
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// 附件上传组件（支持图片和文件，支持拖拽）
+function AttachmentUploader({ images = [], files = [], onImagesChange, onFilesChange }) {
+  const fileInputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // 处理文件
+  const processFiles = (fileList) => {
+    const newImages = [...images];
+    const newFiles = [...files];
+    
+    Array.from(fileList).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        // 图片文件
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          onImagesChange([...newImages, event.target.result]);
+        };
+        reader.readAsDataURL(file);
+        newImages.push(null); // 占位，实际值在reader.onload中设置
+      } else {
+        // 其他文件（PDF、Word、TXT等）
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const fileData = {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            data: event.target.result
+          };
+          onFilesChange([...newFiles, fileData]);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+  
+  // 点击选择文件
+  const handleFileChange = (e) => {
+    processFiles(e.target.files);
+    e.target.value = '';
+  };
+  
+  // 拖拽事件
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
+  };
+  
+  // 删除图片
+  const handleRemoveImage = (index) => {
+    onImagesChange(images.filter((_, i) => i !== index));
+  };
+  
+  // 删除文件
+  const handleRemoveFile = (index) => {
+    onFilesChange(files.filter((_, i) => i !== index));
+  };
+  
+  // 下载文件
+  const handleDownloadFile = (file) => {
+    const link = document.createElement('a');
+    link.href = file.data;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  return (
+    <div>
+      <label className="block text-sm text-gray-600 mb-2">附件（支持图片、PDF、Word、TXT）</label>
+      
+      {/* 拖拽上传区域 */}
+      <div
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className={`border-2 border-dashed rounded-lg p-4 transition-all ${
+          isDragging 
+            ? 'border-blue-500 bg-blue-50' 
+            : 'border-gray-300 hover:border-gray-400'
+        }`}
+      >
+        {/* 已上传的图片 */}
+        {images.length > 0 && (
+          <div className="mb-3">
+            <p className="text-xs text-gray-500 mb-2">图片</p>
+            <div className="flex gap-2 flex-wrap">
+              {images.map((img, idx) => (
+                <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group">
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <button 
+                    type="button" 
+                    onClick={() => handleRemoveImage(idx)} 
+                    className="absolute top-1 right-1 p-1 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X size={12} className="text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* 已上传的文件 */}
+        {files.length > 0 && (
+          <div className="mb-3">
+            <p className="text-xs text-gray-500 mb-2">文件</p>
+            <div className="space-y-2">
+              {files.map((file, idx) => {
+                const FileIcon = getFileIcon(file.name);
+                return (
+                  <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg group">
+                    <FileIcon size={20} className="text-gray-500 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-800 truncate">{file.name}</p>
+                      <p className="text-xs text-gray-400">{formatFileSize(file.size)} · {getFileTypeLabel(file.name)}</p>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        type="button" 
+                        onClick={() => handleDownloadFile(file)}
+                        className="p-1 hover:bg-gray-200 rounded"
+                        title="下载"
+                      >
+                        <Download size={14} className="text-gray-500" />
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveFile(idx)}
+                        className="p-1 hover:bg-red-100 rounded"
+                        title="删除"
+                      >
+                        <X size={14} className="text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
+        {/* 上传提示 */}
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          className="flex flex-col items-center justify-center py-4 cursor-pointer"
+        >
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+            isDragging ? 'bg-blue-100' : 'bg-gray-100'
+          }`}>
+            <Upload size={20} className={isDragging ? 'text-blue-500' : 'text-gray-400'} />
+          </div>
+          <p className="text-sm text-gray-500">
+            {isDragging ? '松开鼠标上传文件' : '点击或拖拽文件到此处上传'}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">支持图片、PDF、Word、TXT等格式</p>
+        </div>
+        
+        <input 
+          ref={fileInputRef} 
+          type="file" 
+          accept="image/*,.pdf,.doc,.docx,.txt" 
+          multiple 
+          onChange={handleFileChange} 
+          className="hidden" 
+        />
+      </div>
+    </div>
+  );
+}
+
+// 旧版图片上传组件（保留兼容性）
 function ImageUploader({ images = [], onChange }) {
   const fileInputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -905,6 +1484,40 @@ function ImageUploader({ images = [], onChange }) {
     e.target.value = '';
   };
   
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          onChange([...images, event.target.result]);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+  
   const handleRemove = (index) => {
     onChange(images.filter((_, i) => i !== index));
   };
@@ -912,7 +1525,15 @@ function ImageUploader({ images = [], onChange }) {
   return (
     <div>
       <label className="block text-sm text-gray-600 mb-2">图片附件</label>
-      <div className="flex gap-2 flex-wrap">
+      <div 
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className={`flex gap-2 flex-wrap p-3 rounded-lg border-2 border-dashed transition-all ${
+          isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+        }`}
+      >
         {images.map((img, idx) => (
           <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group">
             <img src={img} alt="" className="w-full h-full object-cover" />
@@ -921,11 +1542,123 @@ function ImageUploader({ images = [], onChange }) {
             </button>
           </div>
         ))}
-        <button type="button" onClick={() => fileInputRef.current?.click()} className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors">
+        <button 
+          type="button" 
+          onClick={() => fileInputRef.current?.click()} 
+          className={`w-20 h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
+            isDragging 
+              ? 'border-blue-400 text-blue-500' 
+              : 'border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500'
+          }`}
+        >
           <ImagePlus size={20} />
           <span className="text-xs mt-1">添加</span>
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
+      </div>
+      {isDragging && (
+        <p className="text-xs text-blue-500 mt-1">松开鼠标上传图片</p>
+      )}
+    </div>
+  );
+}
+
+// 提醒弹窗组件
+function ReminderModal({ isOpen, onClose, note }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  
+  if (!isOpen || !note) return null;
+  
+  // 再次播放提醒声音
+  const playSound = () => {
+    if (isPlaying) return;
+    setIsPlaying(true);
+    
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      const playBeep = (frequency, startTime, duration) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+      
+      const now = audioContext.currentTime;
+      playBeep(880, now, 0.15);
+      playBeep(880, now + 0.2, 0.15);
+      playBeep(1100, now + 0.4, 0.3);
+      
+      setTimeout(() => setIsPlaying(false), 700);
+    } catch (e) {
+      setIsPlaying(false);
+      console.error('播放声音失败:', e);
+    }
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70]" onClick={onClose}>
+      <div 
+        className="bg-white rounded-2xl w-full max-w-sm mx-4 overflow-hidden animate-fadeIn shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 头部 */}
+        <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-6 text-white">
+          <div className="flex items-center justify-center mb-3">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+              <BellRing size={32} className="text-white animate-pulse" />
+            </div>
+          </div>
+          <h2 className="text-xl font-bold text-center">提醒时间到！</h2>
+        </div>
+        
+        {/* 内容 */}
+        <div className="p-6">
+          <div className="text-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">{note.title}</h3>
+            <div className="flex items-center justify-center gap-2 text-gray-500">
+              <Calendar size={16} />
+              <span>{note.date}</span>
+              <Clock size={16} className="ml-2" />
+              <span>{note.reminderTime}</span>
+            </div>
+          </div>
+          
+          {note.note && (
+            <div className="bg-gray-50 rounded-lg p-3 mb-4">
+              <p className="text-gray-600 text-sm">{note.note}</p>
+            </div>
+          )}
+          
+          <div className="flex gap-3">
+            {note.reminderSound && (
+              <button
+                onClick={playSound}
+                disabled={isPlaying}
+                className="flex-1 py-2.5 border border-amber-500 text-amber-600 rounded-lg font-medium hover:bg-amber-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <Volume2 size={18} className={isPlaying ? 'animate-pulse' : ''} />
+                再响一次
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors"
+            >
+              我知道了
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1068,6 +1801,14 @@ function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDeta
                 {isPast ? `已过 ${Math.abs(days)} 天` : days === 0 ? '就是今天！' : `还剩 ${days} 天`}
               </span>
             </div>
+            {/* 显示提醒时间 */}
+            {note.hasReminder && note.reminderTime && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
+                <Bell size={12} />
+                <span>提醒时间：{note.reminderTime.slice(0, 5)}</span>
+                {note.reminderSound && <Volume2 size={12} />}
+              </div>
+            )}
           </div>
         );
       
@@ -1088,6 +1829,42 @@ function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDeta
                 购买日期：{note.purchaseDate}
               </div>
             )}
+          </div>
+        );
+      
+      case 'membership':
+        const memberStatus = getMembershipStatus(note.endDate);
+        const memberStatusConfig = MEMBERSHIP_STATUS.find(s => s.id === memberStatus);
+        const MemberStatusIcon = memberStatusConfig?.icon || CheckCircle2;
+        const memberDays = getDaysRemaining(note.endDate);
+        const memberType = MEMBERSHIP_TYPES.find(t => t.id === note.membershipType);
+        return (
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500">{memberType?.name || '会员'} · ¥{note.price}/{memberType?.unit || '月'}</span>
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${memberStatusConfig?.bg}`}>
+                <MemberStatusIcon size={12} className={memberStatusConfig?.color} />
+                <span className={`text-xs font-medium ${memberStatusConfig?.color}`}>{memberStatusConfig?.name}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>{note.startDate} ~ {note.endDate}</span>
+              <span className={memberStatus === 'expired' ? 'text-gray-400' : memberStatus === 'expiring' ? 'text-orange-600 font-medium' : 'text-green-600'}>
+                {memberStatus === 'expired' ? `已过期 ${Math.abs(memberDays)} 天` : `还剩 ${memberDays} 天`}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {note.autoRenew && (
+                <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                  <RefreshCw size={10} /> 自动续费
+                </span>
+              )}
+              {note.hasReminder && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+                  <Bell size={10} /> 提前{note.reminderDays || 3}天提醒
+                </span>
+              )}
+            </div>
           </div>
         );
       
@@ -1112,11 +1889,6 @@ function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDeta
             {isPrivate && <div className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 rounded-full flex items-center justify-center"><Lock size={8} className="text-white" /></div>}
           </div>
           <h3 className="font-semibold text-gray-800">{note.title}</h3>
-          {category.noteType === 'date' && note.hasReminder && (
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${note.reminderSound ? 'bg-amber-100' : 'bg-gray-100'}`}>
-              {note.reminderSound ? <Volume2 size={10} className="text-amber-600" /> : <VolumeX size={10} className="text-gray-500" />}
-            </div>
-          )}
         </div>
         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
           <button onClick={() => onEdit(note)} className="p-1.5 rounded-md hover:bg-gray-100"><Edit3 size={14} className="text-gray-400" /></button>
@@ -1315,6 +2087,114 @@ function NoteDetailModal({ isOpen, onClose, note, category, onUpdateStatus, onEd
                 </div>
               </div>
             )}
+            {note.files && note.files.length > 0 && (
+              <div>
+                <div className="text-gray-600 text-sm mb-2">附件文件</div>
+                <div className="space-y-2">
+                  {note.files.map((file, idx) => {
+                    const FileIcon = getFileIcon(file.name);
+                    return (
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg group">
+                        <FileIcon size={20} className="text-gray-500 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-800 truncate">{file.name}</p>
+                          <p className="text-xs text-gray-400">{formatFileSize(file.size)} · {getFileTypeLabel(file.name)}</p>
+                        </div>
+                        <a 
+                          href={file.data} 
+                          download={file.name}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title="下载"
+                        >
+                          <Download size={14} className="text-gray-500" />
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'membership':
+        const memberStatus = getMembershipStatus(note.endDate);
+        const memberStatusConfig = MEMBERSHIP_STATUS.find(s => s.id === memberStatus);
+        const MemberStatusIcon = memberStatusConfig?.icon || CheckCircle2;
+        const memberDays = getDaysRemaining(note.endDate);
+        const memberType = MEMBERSHIP_TYPES.find(t => t.id === note.membershipType);
+        const totalCost = calculateMembershipTotalCost(note);
+        
+        return (
+          <div className="space-y-4">
+            {/* 状态和剩余天数 */}
+            <div className="text-center py-6 bg-gradient-to-br from-violet-50 to-purple-100 rounded-xl">
+              <div className={`text-5xl font-bold mb-2 ${
+                memberStatus === 'expired' ? 'text-gray-400' : 
+                memberStatus === 'expiring' ? 'text-orange-500' : 'text-violet-600'
+              }`}>
+                {Math.abs(memberDays)}
+              </div>
+              <div className="text-gray-500">
+                {memberStatus === 'expired' ? '天前已过期' : memberDays === 0 ? '今天到期！' : '天后到期'}
+              </div>
+              <div className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full ${memberStatusConfig?.bg}`}>
+                <MemberStatusIcon size={14} className={memberStatusConfig?.color} />
+                <span className={`text-sm font-medium ${memberStatusConfig?.color}`}>{memberStatusConfig?.name}</span>
+              </div>
+            </div>
+            
+            {/* 价格信息 */}
+            <div className="bg-violet-50 rounded-lg px-4 py-3">
+              <div className="flex justify-between items-center">
+                <span className="text-violet-600">单价</span>
+                <span className="text-violet-800 font-bold text-lg">¥{note.price || 0}/{memberType?.unit || '月'}</span>
+              </div>
+              <div className="flex justify-between items-center mt-2 pt-2 border-t border-violet-100">
+                <span className="text-violet-600">累计花费</span>
+                <span className="text-violet-800 font-bold">¥{totalCost.toLocaleString()}</span>
+              </div>
+            </div>
+            
+            {/* 会员信息 */}
+            <div className="space-y-2">
+              <div className="bg-gray-50 rounded-lg px-4 py-3 flex justify-between">
+                <span className="text-gray-500">会员类型</span>
+                <span className="text-gray-800 font-medium">{memberType?.name || '未知'}</span>
+              </div>
+              <div className="bg-gray-50 rounded-lg px-4 py-3 flex justify-between">
+                <span className="text-gray-500">开始日期</span>
+                <span className="text-gray-800 font-medium">{note.startDate}</span>
+              </div>
+              <div className="bg-gray-50 rounded-lg px-4 py-3 flex justify-between">
+                <span className="text-gray-500">到期日期</span>
+                <span className="text-gray-800 font-medium">{note.endDate}</span>
+              </div>
+            </div>
+            
+            {/* 自动续费标记 */}
+            {note.autoRenew && (
+              <div className="bg-blue-50 rounded-lg px-4 py-3 flex items-center gap-2">
+                <RefreshCw size={16} className="text-blue-600" />
+                <span className="text-blue-700 font-medium">已开启自动续费</span>
+              </div>
+            )}
+            
+            {/* 提醒设置 */}
+            {note.hasReminder && (
+              <div className="bg-amber-50 rounded-lg px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {note.reminderSound ? <BellRing size={16} className="text-amber-600" /> : <BellOff size={16} className="text-amber-500" />}
+                    <span className="text-amber-700 font-medium">到期提醒</span>
+                  </div>
+                  <span className="text-amber-800">提前 {note.reminderDays || 3} 天</span>
+                </div>
+                <div className="text-amber-600 text-sm mt-1">
+                  提醒时间：{note.reminderTime?.slice(0, 5) || '09:00'} · {note.reminderSound ? '有声提醒' : '静音提醒'}
+                </div>
+              </div>
+            )}
           </div>
         );
       
@@ -1337,6 +2217,33 @@ function NoteDetailModal({ isOpen, onClose, note, category, onUpdateStatus, onEd
                       <img src={img} alt="" className="w-full h-full object-cover" />
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+            {note.files && note.files.length > 0 && (
+              <div>
+                <div className="text-gray-600 text-sm mb-2">附件文件</div>
+                <div className="space-y-2">
+                  {note.files.map((file, idx) => {
+                    const FileIcon = getFileIcon(file.name);
+                    return (
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg group">
+                        <FileIcon size={20} className="text-gray-500 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-800 truncate">{file.name}</p>
+                          <p className="text-xs text-gray-400">{formatFileSize(file.size)} · {getFileTypeLabel(file.name)}</p>
+                        </div>
+                        <a 
+                          href={file.data} 
+                          download={file.name}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title="下载"
+                        >
+                          <Download size={14} className="text-gray-500" />
+                        </a>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -2083,14 +2990,40 @@ function AvatarCropModal({ isOpen, onClose, imageData, onConfirm }) {
 function CategoryModal({ isOpen, onClose, categories, onSave, onDelete, editingCategory }) {
   const [name, setName] = useState('');
   const [iconName, setIconName] = useState('StickyNote');
-  const [color, setColor] = useState('blue');
+  const [color, setColor] = useState('gray');
   const [noteType, setNoteType] = useState('simple');
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   React.useEffect(() => {
-    if (editingCategory) { setName(editingCategory.name); setIconName(editingCategory.iconName); setColor(editingCategory.color); setNoteType(editingCategory.noteType); }
-    else { setName(''); setIconName('StickyNote'); setColor('blue'); setNoteType('simple'); }
+    if (editingCategory) { 
+      setName(editingCategory.name); 
+      setIconName(editingCategory.iconName); 
+      setColor(editingCategory.color); 
+      setNoteType(editingCategory.noteType); 
+    } else { 
+      // 新建时使用默认类型的默认图标和颜色
+      const defaultType = NOTE_TYPES[0];
+      setName(''); 
+      setIconName(defaultType.defaultIcon); 
+      setColor(defaultType.defaultColor); 
+      setNoteType(defaultType.id); 
+    }
+    setShowDeleteConfirm(false);
   }, [editingCategory, isOpen]);
+  
+  // 切换类型时自动更新图标和颜色（仅新建时）
+  const handleNoteTypeChange = (typeId) => {
+    setNoteType(typeId);
+    // 只有新建类别时才自动更新图标和颜色
+    if (!editingCategory) {
+      const typeConfig = NOTE_TYPES.find(t => t.id === typeId);
+      if (typeConfig) {
+        setIconName(typeConfig.defaultIcon);
+        setColor(typeConfig.defaultColor);
+      }
+    }
+  };
   
   if (!isOpen) return null;
   
@@ -2099,6 +3032,11 @@ function CategoryModal({ isOpen, onClose, categories, onSave, onDelete, editingC
     onSave({ id: editingCategory?.id || `cat_${Date.now()}`, name, iconName, color, noteType });
     onClose();
   };
+  
+  // 获取该类别下的便签数量
+  const noteCount = editingCategory 
+    ? categories.reduce((count, cat) => cat.id === editingCategory.id ? count : count, 0)
+    : 0;
   
   const SelectedIcon = getIconComponent(iconName);
   const selectedColor = getColorClasses(color);
@@ -2111,61 +3049,99 @@ function CategoryModal({ isOpen, onClose, categories, onSave, onDelete, editingC
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X size={20} className="text-gray-500" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 pt-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex items-center justify-center py-4">
-              <div className={`w-16 h-16 rounded-2xl ${selectedColor.bg} flex items-center justify-center`}><SelectedIcon size={32} className={selectedColor.text} /></div>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">类别名称</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">便签类型</label>
-              <div className="grid grid-cols-2 gap-2">
-                {NOTE_TYPES.map(type => (
-                  <button key={type.id} type="button" onClick={() => setNoteType(type.id)}
-                    className={`p-3 rounded-lg border text-left transition-all ${noteType === type.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}`}>
-                    <div className="font-medium text-sm text-gray-800 flex items-center gap-1">{type.name}{type.defaultPrivate && <Lock size={12} className="text-violet-500" />}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{type.description}</div>
-                  </button>
-                ))}
+          {/* 删除确认界面 */}
+          {showDeleteConfirm ? (
+            <div className="text-center py-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={32} className="text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">确认删除类别？</h3>
+              <p className="text-gray-600 mb-2">
+                您确定要删除「<span className="font-medium">{editingCategory?.name}</span>」类别吗？
+              </p>
+              <p className="text-red-500 text-sm mb-6">
+                ⚠️ 该类别下的所有便签都将被永久删除，此操作不可恢复！
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowDeleteConfirm(false)} 
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button 
+                  onClick={() => { onDelete(editingCategory.id); onClose(); }} 
+                  className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600"
+                >
+                  确认删除
+                </button>
               </div>
             </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">选择图标</label>
-              <button type="button" onClick={() => setShowIconPicker(!showIconPicker)} className="w-full px-3 py-2 border border-gray-200 rounded-lg flex items-center justify-between hover:border-gray-300">
-                <div className="flex items-center gap-2"><SelectedIcon size={18} className="text-gray-600" /><span className="text-gray-700">{iconName}</span></div>
-                <span className="text-gray-400 text-sm">{showIconPicker ? '收起' : '展开'}</span>
-              </button>
-              {showIconPicker && (
-                <div className="mt-2 p-3 border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
-                  <div className="grid grid-cols-8 gap-1">
-                    {ICON_OPTIONS.map(({ name: iName, icon: IconComp }) => (
-                      <button key={iName} type="button" onClick={() => { setIconName(iName); setShowIconPicker(false); }}
-                        className={`p-2 rounded-lg transition-colors ${iconName === iName ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-600'}`} title={iName}>
-                        <IconComp size={18} />
-                      </button>
-                    ))}
-                  </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="flex items-center justify-center py-4">
+                <div className={`w-16 h-16 rounded-2xl ${selectedColor.bg} flex items-center justify-center`}><SelectedIcon size={32} className={selectedColor.text} /></div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">类别名称</label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">便签类型</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {NOTE_TYPES.map(type => (
+                    <button key={type.id} type="button" onClick={() => handleNoteTypeChange(type.id)}
+                      className={`p-3 rounded-lg border text-left transition-all ${noteType === type.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}`}>
+                      <div className="font-medium text-sm text-gray-800 flex items-center gap-1">{type.name}{type.defaultPrivate && <Lock size={12} className="text-violet-500" />}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{type.description}</div>
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">选择颜色</label>
-              <div className="grid grid-cols-9 gap-2">
-                {COLOR_OPTIONS.map(c => (
-                  <button key={c.name} type="button" onClick={() => setColor(c.name)}
-                    className={`w-8 h-8 rounded-full ${c.bg} ${c.text} flex items-center justify-center transition-all ${color === c.name ? 'ring-2 ring-offset-2 ' + c.ring : ''}`}>
-                    {color === c.name && <Check size={14} />}
-                  </button>
-                ))}
               </div>
-            </div>
-            <div className="flex gap-2 pt-2">
-              {editingCategory && <button type="button" onClick={() => { onDelete(editingCategory.id); onClose(); }} className="px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg font-medium">删除</button>}
-              <button type="submit" className="flex-1 bg-blue-500 text-white py-2.5 rounded-lg font-medium hover:bg-blue-600 transition-colors">保存</button>
-            </div>
-          </form>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">选择图标</label>
+                <button type="button" onClick={() => setShowIconPicker(!showIconPicker)} className="w-full px-3 py-2 border border-gray-200 rounded-lg flex items-center justify-between hover:border-gray-300">
+                  <div className="flex items-center gap-2"><SelectedIcon size={18} className="text-gray-600" /><span className="text-gray-700">{iconName}</span></div>
+                  <span className="text-gray-400 text-sm">{showIconPicker ? '收起' : '展开'}</span>
+                </button>
+                {showIconPicker && (
+                  <div className="mt-2 p-3 border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+                    <div className="grid grid-cols-8 gap-1">
+                      {ICON_OPTIONS.map(({ name: iName, icon: IconComp }) => (
+                        <button key={iName} type="button" onClick={() => { setIconName(iName); setShowIconPicker(false); }}
+                          className={`p-2 rounded-lg transition-colors ${iconName === iName ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-600'}`} title={iName}>
+                          <IconComp size={18} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">选择颜色</label>
+                <div className="grid grid-cols-9 gap-2">
+                  {COLOR_OPTIONS.map(c => (
+                    <button key={c.name} type="button" onClick={() => setColor(c.name)}
+                      className={`w-8 h-8 rounded-full ${c.bg} ${c.text} flex items-center justify-center transition-all ${color === c.name ? 'ring-2 ring-offset-2 ' + c.ring : ''}`}>
+                      {color === c.name && <Check size={14} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                {editingCategory && (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowDeleteConfirm(true)} 
+                    className="px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg font-medium"
+                  >
+                    删除
+                  </button>
+                )}
+                <button type="submit" className="flex-1 bg-blue-500 text-white py-2.5 rounded-lg font-medium hover:bg-blue-600 transition-colors">保存</button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>
@@ -2173,7 +3149,7 @@ function CategoryModal({ isOpen, onClose, categories, onSave, onDelete, editingC
 }
 
 // 便签弹窗
-function NoteModal({ isOpen, onClose, onSave, editingNote, categories }) {
+function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCategoryId }) {
   const [categoryId, setCategoryId] = useState('');
   const [formData, setFormData] = useState({});
   const [isPrivate, setIsPrivate] = useState(false);
@@ -2187,13 +3163,50 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories }) {
       setFormData(editingNote);
       setIsPrivate(editingNote.isPrivate ?? false);
     } else {
-      const firstCat = categories[0];
-      setCategoryId(firstCat?.id || '');
-      setFormData({ images: [], hasReminder: false, reminderTime: '09:00:00', reminderSound: true });
-      const noteType = NOTE_TYPES.find(t => t.id === firstCat?.noteType);
+      // 如果有指定默认类别且存在于列表中，使用它；否则使用第一个类别
+      const targetCat = defaultCategoryId && categories.find(c => c.id === defaultCategoryId);
+      const initialCat = targetCat || categories[0];
+      setCategoryId(initialCat?.id || '');
+      
+      // 基础表单数据
+      const baseFormData = { images: [], files: [], hasReminder: false, reminderTime: '09:00:00', reminderSound: true };
+      
+      // 如果是会员管理类型，设置默认日期
+      if (initialCat?.noteType === 'membership') {
+        const today = new Date();
+        const startDate = today.toISOString().split('T')[0];
+        const endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + 30); // 默认连续包月30天
+        baseFormData.membershipType = 'monthly_auto';
+        baseFormData.startDate = startDate;
+        baseFormData.endDate = endDate.toISOString().split('T')[0];
+        baseFormData.reminderDays = 3;
+        baseFormData.reminderSound = true;
+      }
+      
+      setFormData(baseFormData);
+      const noteType = NOTE_TYPES.find(t => t.id === initialCat?.noteType);
       setIsPrivate(noteType?.defaultPrivate ?? false);
     }
-  }, [editingNote, isOpen, categories]);
+  }, [editingNote, isOpen, categories, defaultCategoryId]);
+  
+  // 当切换类别时，如果是会员管理，也要设置默认日期
+  React.useEffect(() => {
+    if (!editingNote && selectedCategory?.noteType === 'membership' && !formData.startDate) {
+      const today = new Date();
+      const startDate = today.toISOString().split('T')[0];
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + 30);
+      setFormData(prev => ({
+        ...prev,
+        membershipType: prev.membershipType || 'monthly_auto',
+        startDate: startDate,
+        endDate: endDate.toISOString().split('T')[0],
+        reminderDays: prev.reminderDays || 3,
+        reminderSound: prev.reminderSound ?? true
+      }));
+    }
+  }, [selectedCategory, editingNote]);
   
   React.useEffect(() => {
     if (!editingNote && selectedCategory) {
@@ -2209,7 +3222,7 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories }) {
     // 确保报销记录有默认状态
     const noteData = { ...formData, categoryId, isPrivate, id: editingNote?.id || Date.now() };
     if (selectedCategory?.noteType === 'expense' && !noteData.status) {
-      noteData.status = 'not_invoiced';
+      noteData.status = 'not_invoiced'; // 默认为"未开票"
     }
     onSave(noteData);
     onClose();
@@ -2228,28 +3241,116 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories }) {
       case 'link':
         return <div><label className="block text-sm text-gray-600 mb-1">网址</label><input type="url" value={formData.url || ''} onChange={(e) => setFormData({...formData, url: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://" /></div>;
       case 'date':
+        // 检查日期是否是过去
+        const today = new Date().toISOString().split('T')[0];
+        const selectedDate = formData.date || '';
+        const isPastDate = selectedDate && selectedDate < today;
+        const isToday = selectedDate === today;
+        
+        // 获取当前时间（用于限制今天的提醒时间）
+        const now = new Date();
+        const currentTimeStr = now.toTimeString().split(' ')[0]; // HH:MM:SS
+        
+        // 检查提醒时间是否已过（仅对今天有效）
+        const reminderTime = formData.reminderTime || '09:00:00';
+        const isReminderTimePast = isToday && reminderTime <= currentTimeStr;
+        
+        // 如果日期是过去或今天的提醒时间已过，应该禁用提醒
+        const shouldDisableReminder = isPastDate || isReminderTimePast;
+        
+        // 处理日期变化
+        const handleDateChange = (e) => {
+          const newDate = e.target.value;
+          const newIsPast = newDate && newDate < today;
+          
+          // 如果改成过去的日期，自动关闭提醒
+          if (newIsPast && formData.hasReminder) {
+            setFormData({...formData, date: newDate, hasReminder: false});
+          } else {
+            setFormData({...formData, date: newDate});
+          }
+        };
+        
+        // 处理提醒开关变化
+        const handleReminderToggle = () => {
+          if (!formData.hasReminder) {
+            // 开启提醒时，如果是今天且当前时间已过默认提醒时间，设置一个合理的未来时间
+            if (isToday) {
+              const futureTime = new Date(now.getTime() + 5 * 60000); // 5分钟后
+              const futureTimeStr = futureTime.toTimeString().split(' ')[0];
+              setFormData({...formData, hasReminder: true, reminderTime: futureTimeStr});
+            } else {
+              setFormData({...formData, hasReminder: true});
+            }
+          } else {
+            setFormData({...formData, hasReminder: false});
+          }
+        };
+        
+        // 处理提醒时间变化
+        const handleReminderTimeChange = (e) => {
+          const newTime = e.target.value;
+          // 如果是今天，检查时间是否有效
+          if (isToday && newTime <= currentTimeStr) {
+            // 时间已过，不更新并给出提示（通过 UI 显示）
+            return;
+          }
+          setFormData({...formData, reminderTime: newTime});
+        };
+        
+        // 计算今天可选的最小时间（当前时间往后1分钟）
+        const minTime = isToday ? currentTimeStr : undefined;
+        
         return (
           <>
             <div>
               <label className="block text-sm text-gray-600 mb-1">日期</label>
-              <input type="date" value={formData.date || ''} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input type="date" value={formData.date || ''} onChange={handleDateChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
-            <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 space-y-3">
+            <div className={`p-4 rounded-xl border space-y-3 ${isPastDate ? 'bg-gray-50 border-gray-200' : 'bg-amber-50 border-amber-100'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Bell size={16} className="text-amber-600" />
-                  <span className="text-sm font-medium text-amber-800">启用提醒</span>
+                  <Bell size={16} className={isPastDate ? 'text-gray-400' : 'text-amber-600'} />
+                  <span className={`text-sm font-medium ${isPastDate ? 'text-gray-500' : 'text-amber-800'}`}>启用提醒</span>
+                  {isPastDate && <span className="text-xs text-gray-400">(已过期)</span>}
                 </div>
-                <button type="button" onClick={() => setFormData({...formData, hasReminder: !formData.hasReminder})}
-                  className={`w-11 h-6 rounded-full transition-colors relative ${formData.hasReminder ? 'bg-amber-500' : 'bg-gray-300'}`}>
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${formData.hasReminder ? 'left-6' : 'left-1'}`} />
+                <button 
+                  type="button" 
+                  onClick={handleReminderToggle}
+                  disabled={isPastDate}
+                  className={`w-11 h-6 rounded-full transition-colors relative ${
+                    isPastDate 
+                      ? 'bg-gray-200 cursor-not-allowed' 
+                      : formData.hasReminder 
+                        ? 'bg-amber-500' 
+                        : 'bg-gray-300'
+                  }`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${formData.hasReminder && !isPastDate ? 'left-6' : 'left-1'}`} />
                 </button>
               </div>
-              {formData.hasReminder && (
+              {formData.hasReminder && !isPastDate && (
                 <>
                   <div>
-                    <label className="block text-xs text-amber-700 mb-1">提醒时间</label>
-                    <input type="time" step="1" value={formData.reminderTime || '09:00:00'} onChange={(e) => setFormData({...formData, reminderTime: e.target.value})} className="w-full px-3 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-sm" />
+                    <label className="block text-xs text-amber-700 mb-1">
+                      提醒时间
+                      {isToday && <span className="text-amber-500 ml-1">(需晚于当前时间 {currentTimeStr.slice(0,5)})</span>}
+                    </label>
+                    <input 
+                      type="time" 
+                      step="1" 
+                      value={formData.reminderTime || '09:00:00'} 
+                      onChange={handleReminderTimeChange} 
+                      min={minTime}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-white text-sm ${
+                        isReminderTimePast 
+                          ? 'border-red-300 focus:ring-red-500 text-red-600' 
+                          : 'border-amber-200 focus:ring-amber-500'
+                      }`} 
+                    />
+                    {isReminderTimePast && (
+                      <p className="text-xs text-red-500 mt-1">提醒时间已过，请选择更晚的时间</p>
+                    )}
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -2282,14 +3383,199 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories }) {
                 {EXPENSE_STATUS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
-            <ImageUploader images={formData.images || []} onChange={(images) => setFormData({...formData, images})} />
+            <AttachmentUploader 
+              images={formData.images || []} 
+              files={formData.files || []}
+              onImagesChange={(images) => setFormData({...formData, images})}
+              onFilesChange={(files) => setFormData({...formData, files})}
+            />
+          </>
+        );
+      case 'membership':
+        // 计算到期日期
+        const calcEndDate = (startDate, typeId, customDays) => {
+          if (!startDate) return '';
+          const start = new Date(startDate);
+          const type = MEMBERSHIP_TYPES.find(t => t.id === typeId);
+          const days = type?.id === 'custom' ? (customDays || 30) : (type?.days || 30);
+          start.setDate(start.getDate() + days);
+          return start.toISOString().split('T')[0];
+        };
+        
+        // 处理会员类型变化
+        const handleMembershipTypeChange = (typeId) => {
+          const newEndDate = calcEndDate(formData.startDate || new Date().toISOString().split('T')[0], typeId, formData.customDays);
+          setFormData({...formData, membershipType: typeId, endDate: newEndDate});
+        };
+        
+        // 处理开始日期变化
+        const handleStartDateChange = (date) => {
+          const newEndDate = calcEndDate(date, formData.membershipType || 'monthly_auto', formData.customDays);
+          setFormData({...formData, startDate: date, endDate: newEndDate});
+        };
+        
+        // 处理自定义天数变化
+        const handleCustomDaysChange = (days) => {
+          const newEndDate = calcEndDate(formData.startDate, 'custom', days);
+          setFormData({...formData, customDays: days, endDate: newEndDate});
+        };
+        
+        return (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">会员类型</label>
+                <select 
+                  value={formData.membershipType || 'monthly_auto'} 
+                  onChange={(e) => handleMembershipTypeChange(e.target.value)} 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {MEMBERSHIP_TYPES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">单价（元）</label>
+                <input 
+                  type="number" 
+                  value={formData.price || ''} 
+                  onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})} 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  placeholder="0.00" 
+                />
+              </div>
+            </div>
+            
+            {formData.membershipType === 'custom' && (
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">自定义天数</label>
+                <input 
+                  type="number" 
+                  value={formData.customDays || 30} 
+                  onChange={(e) => handleCustomDaysChange(parseInt(e.target.value) || 30)} 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  min="1"
+                />
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">开始日期</label>
+                <input 
+                  type="date" 
+                  value={formData.startDate || new Date().toISOString().split('T')[0]} 
+                  onChange={(e) => handleStartDateChange(e.target.value)} 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">到期日期</label>
+                <input 
+                  type="date" 
+                  value={formData.endDate || ''} 
+                  min={formData.startDate || new Date().toISOString().split('T')[0]}
+                  onChange={(e) => {
+                    // 验证到期日期不能早于开始日期
+                    const startDate = formData.startDate || new Date().toISOString().split('T')[0];
+                    if (e.target.value < startDate) {
+                      return; // 不允许设置早于开始日期的到期日期
+                    }
+                    setFormData({...formData, endDate: e.target.value});
+                  }} 
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                    formData.endDate && formData.startDate && formData.endDate < formData.startDate
+                      ? 'border-red-300 focus:ring-red-500'
+                      : 'border-gray-200 focus:ring-blue-500'
+                  }`} 
+                />
+                {formData.endDate && formData.startDate && formData.endDate < formData.startDate && (
+                  <p className="text-xs text-red-500 mt-1">到期日期不能早于开始日期</p>
+                )}
+              </div>
+            </div>
+            
+            {/* 自动续费开关 */}
+            <div className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <RefreshCw size={16} className="text-blue-600" />
+                <span className="text-sm text-blue-700">自动续费</span>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setFormData({...formData, autoRenew: !formData.autoRenew})} 
+                className={`w-11 h-6 rounded-full transition-colors relative ${formData.autoRenew ? 'bg-blue-500' : 'bg-gray-300'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${formData.autoRenew ? 'left-6' : 'left-1'}`} />
+              </button>
+            </div>
+            
+            {/* 到期提醒设置 */}
+            <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell size={16} className="text-amber-600" />
+                  <span className="text-sm font-medium text-amber-800">到期提醒</span>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setFormData({...formData, hasReminder: !formData.hasReminder})}
+                  className={`w-11 h-6 rounded-full transition-colors relative ${formData.hasReminder ? 'bg-amber-500' : 'bg-gray-300'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${formData.hasReminder ? 'left-6' : 'left-1'}`} />
+                </button>
+              </div>
+              {formData.hasReminder && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-amber-700 mb-1">提前几天提醒</label>
+                      <input 
+                        type="number" 
+                        value={formData.reminderDays || 3} 
+                        onChange={(e) => setFormData({...formData, reminderDays: parseInt(e.target.value) || 3})} 
+                        className="w-full px-3 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-sm" 
+                        min="1"
+                        max="30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-amber-700 mb-1">提醒时间</label>
+                      <input 
+                        type="time" 
+                        value={formData.reminderTime || '09:00'} 
+                        onChange={(e) => setFormData({...formData, reminderTime: e.target.value})} 
+                        className="w-full px-3 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-sm" 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {formData.reminderSound ? <Volume2 size={14} className="text-amber-600" /> : <VolumeX size={14} className="text-amber-500" />}
+                      <span className="text-xs text-amber-700">{formData.reminderSound ? '有声提醒' : '静音提醒'}</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setFormData({...formData, reminderSound: !formData.reminderSound})}
+                      className={`w-9 h-5 rounded-full transition-colors relative ${formData.reminderSound ? 'bg-amber-500' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${formData.reminderSound ? 'left-4' : 'left-0.5'}`} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </>
         );
       default:
         return (
           <>
             <div><label className="block text-sm text-gray-600 mb-1">内容</label><textarea value={formData.content || ''} onChange={(e) => setFormData({...formData, content: e.target.value})} rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" /></div>
-            <ImageUploader images={formData.images || []} onChange={(images) => setFormData({...formData, images})} />
+            <AttachmentUploader 
+              images={formData.images || []} 
+              files={formData.files || []}
+              onImagesChange={(images) => setFormData({...formData, images})}
+              onFilesChange={(files) => setFormData({...formData, files})}
+            />
           </>
         );
     }
@@ -2343,7 +3629,8 @@ function ExpenseStats({ notes, categories }) {
     return acc;
   }, {});
   
-  const pendingAmount = stats.not_invoiced.amount + stats.invoiced.amount;
+  // 待报销金额包括：已申请未出票 + 未开发票 + 已开发票未报销
+  const pendingAmount = (stats.applied?.amount || 0) + (stats.not_invoiced?.amount || 0) + (stats.invoiced?.amount || 0);
   
   if (pendingAmount === 0) return null;
   
@@ -2353,9 +3640,60 @@ function ExpenseStats({ notes, categories }) {
         <span className="text-sm text-emerald-700">待报销金额</span>
         <span className="text-lg font-bold text-emerald-700">¥{pendingAmount.toLocaleString()}</span>
       </div>
-      <div className="flex gap-3 mt-2 text-xs">
-        {stats.not_invoiced.count > 0 && <span className="text-orange-600">{stats.not_invoiced.count}笔未开票</span>}
-        {stats.invoiced.count > 0 && <span className="text-blue-600">{stats.invoiced.count}笔待报销</span>}
+      <div className="flex gap-3 mt-2 text-xs flex-wrap">
+        {stats.applied?.count > 0 && <span className="text-purple-600">{stats.applied.count}笔已申请</span>}
+        {stats.not_invoiced?.count > 0 && <span className="text-orange-600">{stats.not_invoiced.count}笔未开票</span>}
+        {stats.invoiced?.count > 0 && <span className="text-blue-600">{stats.invoiced.count}笔待报销</span>}
+      </div>
+    </div>
+  );
+}
+
+// 会员统计组件
+function MembershipStats({ notes, categories }) {
+  const memberCategory = categories.find(c => c.noteType === 'membership');
+  if (!memberCategory) return null;
+  
+  const memberNotes = notes.filter(n => n.categoryId === memberCategory.id);
+  if (memberNotes.length === 0) return null;
+  
+  // 统计各状态数量
+  const statusCounts = memberNotes.reduce((acc, note) => {
+    const status = getMembershipStatus(note.endDate);
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+  
+  // 计算本月支出（本月开始的会员）
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthlyExpense = memberNotes
+    .filter(n => n.startDate?.startsWith(thisMonth))
+    .reduce((sum, n) => sum + (n.price || 0), 0);
+  
+  // 计算年度支出（今年开始的会员累计）
+  const thisYear = String(now.getFullYear());
+  const yearlyExpense = memberNotes
+    .filter(n => n.startDate?.startsWith(thisYear))
+    .reduce((sum, n) => sum + calculateMembershipTotalCost(n), 0);
+  
+  // 计算总累计花费
+  const totalExpense = memberNotes.reduce((sum, n) => sum + calculateMembershipTotalCost(n), 0);
+  
+  return (
+    <div className="mb-4 p-3 bg-violet-50 rounded-lg">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm text-violet-700">会员支出</span>
+        <span className="text-lg font-bold text-violet-700">¥{totalExpense.toLocaleString()}</span>
+      </div>
+      <div className="flex gap-4 text-xs text-violet-600 mb-2">
+        <span>本月 ¥{monthlyExpense.toLocaleString()}</span>
+        <span>年度 ¥{yearlyExpense.toLocaleString()}</span>
+      </div>
+      <div className="flex gap-3 text-xs flex-wrap">
+        {statusCounts.active > 0 && <span className="text-green-600">{statusCounts.active}个生效中</span>}
+        {statusCounts.expiring > 0 && <span className="text-orange-600">{statusCounts.expiring}个即将到期</span>}
+        {statusCounts.expired > 0 && <span className="text-gray-500">{statusCounts.expired}个已过期</span>}
       </div>
     </div>
   );
@@ -2443,6 +3781,9 @@ export default function InfoNotesApp() {
     { id: 1, username: '测试用户', password: 'Test123!', createdAt: '2024-01-01' }
   ]);
   
+  // 记住账号功能
+  const [savedAccounts, setSavedAccounts] = useState([]); // 已保存的账号列表
+  
   // 应用状态
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [notes, setNotes] = useState([]);
@@ -2453,6 +3794,15 @@ export default function InfoNotesApp() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [pin, setPin] = useState(null);
+  
+  // 排序状态（用于报销记录和重要日期）
+  const [sortBy, setSortBy] = useState('created'); // 'created' | 'date'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
+  
+  // 筛选状态（存储选中的状态ID数组，'all' 表示全部）
+  const [statusFilter, setStatusFilter] = useState(['all']);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef(null);
   
   // 详情视图状态
   const [detailNote, setDetailNote] = useState(null);
@@ -2478,6 +3828,10 @@ export default function InfoNotesApp() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [collapseSide, setCollapseSide] = useState('right');
   
+  // 类别拖拽排序状态
+  const [draggedCategory, setDraggedCategory] = useState(null);
+  const [dragOverCategory, setDragOverCategory] = useState(null);
+  
   // 监听窗口收缩状态变化
   useEffect(() => {
     if (window.electronAPI?.onCollapseStateChanged) {
@@ -2488,6 +3842,18 @@ export default function InfoNotesApp() {
     }
   }, []);
   
+  // 登录会话管理：登录后注册会话
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    // 注册会话（使用 Electron API）
+    if (window.electronAPI?.registerSession) {
+      window.electronAPI.registerSession(currentUser.id, currentUser.username);
+    }
+    
+    // 组件卸载时（比如登出）不需要手动清理，因为 handleLogout 会处理
+  }, [currentUser]);
+  
   // 未登录时自动展开窗口
   useEffect(() => {
     if (isCollapsed && !currentUser) {
@@ -2496,6 +3862,180 @@ export default function InfoNotesApp() {
       }
     }
   }, [isCollapsed, currentUser]);
+  
+  // 提醒功能：已触发的提醒ID集合（防止重复提醒）
+  const triggeredRemindersRef = useRef(new Set());
+  
+  // 提醒检测
+  useEffect(() => {
+    if (!currentUser || notes.length === 0) return;
+    
+    // 检查是否有需要提醒的便签
+    const checkReminders = () => {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
+      
+      notes.forEach(note => {
+        // 跳过没有开启提醒的便签
+        if (!note.hasReminder || !note.reminderTime) return;
+        
+        // 确定提醒日期
+        let reminderDate = null;
+        let reminderMessage = '';
+        let isAutoRenewReminder = false;
+        
+        // 获取便签所属类别
+        const category = categories.find(c => c.id === note.categoryId);
+        
+        if (category?.noteType === 'date' && note.date) {
+          // 重要日期：当天提醒
+          reminderDate = note.date;
+          reminderMessage = `${note.title}\n${note.date} ${note.reminderTime.slice(0, 5)}`;
+        } else if (category?.noteType === 'membership' && note.endDate) {
+          // 会员管理：提前N天提醒
+          const reminderDays = note.reminderDays || 3;
+          const endDate = new Date(note.endDate);
+          endDate.setDate(endDate.getDate() - reminderDays);
+          reminderDate = endDate.toISOString().split('T')[0];
+          
+          const daysLeft = getDaysRemaining(note.endDate);
+          reminderMessage = `${note.title} 会员将在 ${daysLeft} 天后到期`;
+          if (note.autoRenew) {
+            reminderMessage += '\n⚠️ 已开启自动续费，如不需要请及时关闭';
+            isAutoRenewReminder = true;
+          }
+        }
+        
+        if (!reminderDate) return;
+        
+        // 检查是否是今天
+        if (reminderDate !== todayStr) return;
+        
+        // 生成唯一的提醒ID（便签ID + 日期 + 时间）
+        const reminderId = `${note.id}_${reminderDate}_${note.reminderTime}`;
+        
+        // 检查是否已经触发过
+        if (triggeredRemindersRef.current.has(reminderId)) return;
+        
+        // 精确比较时间（秒级）
+        const reminderTime = note.reminderTime; // HH:MM:SS 或 HH:MM
+        const reminderParts = reminderTime.split(':');
+        const currentParts = currentTime.split(':');
+        
+        // 转换为总秒数进行比较
+        const reminderSeconds = parseInt(reminderParts[0]) * 3600 + parseInt(reminderParts[1]) * 60 + (parseInt(reminderParts[2]) || 0);
+        const currentSeconds = parseInt(currentParts[0]) * 3600 + parseInt(currentParts[1]) * 60 + parseInt(currentParts[2]);
+        
+        // 当前时间在提醒时间的0-5秒内触发（精确到秒）
+        if (currentSeconds >= reminderSeconds && currentSeconds < reminderSeconds + 5) {
+          // 标记为已触发
+          triggeredRemindersRef.current.add(reminderId);
+          
+          // 触发提醒
+          triggerReminder(note, reminderMessage, isAutoRenewReminder);
+          
+          // 自动关闭该便签的提醒（防止重复触发）
+          setNotes(prevNotes => prevNotes.map(n => 
+            n.id === note.id ? { ...n, hasReminder: false } : n
+          ));
+        }
+      });
+    };
+    
+    // 触发提醒
+    const triggerReminder = (note, message, isAutoRenew) => {
+      // 1. 播放提醒声音（如果开启）
+      if (note.reminderSound) {
+        playReminderSound();
+      }
+      
+      // 2. 显示系统通知
+      if ('Notification' in window) {
+        const notificationTitle = isAutoRenew ? '糖糖便签 - 会员续费提醒' : '糖糖便签 - 提醒';
+        if (Notification.permission === 'granted') {
+          new Notification(notificationTitle, {
+            body: message,
+            icon: '/logo.png',
+            tag: `reminder_${note.id}`,
+            requireInteraction: true
+          });
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              new Notification(notificationTitle, {
+                body: message,
+                icon: '/logo.png',
+                tag: `reminder_${note.id}`,
+                requireInteraction: true
+              });
+            }
+          });
+        }
+      }
+      
+      // 3. 如果窗口是收缩状态，展开它
+      if (isCollapsed && window.electronAPI?.expandWindow) {
+        window.electronAPI.expandWindow();
+      }
+      
+      // 4. 显示应用内提醒弹窗
+      setReminderNote(note);
+      setIsReminderModalOpen(true);
+    };
+    
+    // 播放提醒声音
+    const playReminderSound = () => {
+      try {
+        // 使用 Web Audio API 生成提示音
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const playBeep = (frequency, startTime, duration) => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = frequency;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.3, startTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+          
+          oscillator.start(startTime);
+          oscillator.stop(startTime + duration);
+        };
+        
+        // 播放三声提示音
+        const now = audioContext.currentTime;
+        playBeep(880, now, 0.15);        // A5
+        playBeep(880, now + 0.2, 0.15);  // A5
+        playBeep(1100, now + 0.4, 0.3);  // C#6
+      } catch (e) {
+        console.error('播放提醒声音失败:', e);
+      }
+    };
+    
+    // 请求通知权限
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    
+    // 每秒检查一次（精确到秒）
+    const intervalId = setInterval(checkReminders, 1000);
+    
+    // 立即检查一次
+    checkReminders();
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [currentUser, notes, categories, isCollapsed]);
+  
+  // 提醒弹窗状态
+  const [reminderNote, setReminderNote] = useState(null);
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   
   // 展开窗口
   const handleExpandWindow = () => {
@@ -2519,8 +4059,13 @@ export default function InfoNotesApp() {
           }
         }
         
-        if (savedData && savedData.registeredUsers) {
-          setRegisteredUsers(savedData.registeredUsers);
+        if (savedData) {
+          if (savedData.registeredUsers) {
+            setRegisteredUsers(savedData.registeredUsers);
+          }
+          if (savedData.savedAccounts) {
+            setSavedAccounts(savedData.savedAccounts);
+          }
         }
       } catch (error) {
         console.error('加载全局数据失败:', error);
@@ -2574,7 +4119,7 @@ export default function InfoNotesApp() {
     loadUserData();
   }, [currentUser]);
   
-  // 保存全局数据（注册用户列表）
+  // 保存全局数据（注册用户列表、已保存账号）
   const saveGlobalDataRef = useRef(null);
   useEffect(() => {
     if (!isDataLoaded) return;
@@ -2584,7 +4129,7 @@ export default function InfoNotesApp() {
     }
     
     saveGlobalDataRef.current = setTimeout(async () => {
-      const globalData = { registeredUsers };
+      const globalData = { registeredUsers, savedAccounts };
       
       try {
         if (window.electronAPI) {
@@ -2603,7 +4148,7 @@ export default function InfoNotesApp() {
         clearTimeout(saveGlobalDataRef.current);
       }
     };
-  }, [registeredUsers, isDataLoaded]);
+  }, [registeredUsers, savedAccounts, isDataLoaded]);
   
   // 保存用户数据
   const saveUserDataRef = useRef(null);
@@ -2666,23 +4211,160 @@ export default function InfoNotesApp() {
     setIsDetailOpen(false);
   };
   
+  // 获取当前选中类别的noteType
+  const activeCategoryType = useMemo(() => {
+    if (activeCategory === 'all') return null;
+    const cat = categories.find(c => c.id === activeCategory);
+    return cat?.noteType || null;
+  }, [activeCategory, categories]);
+  
+  // 获取当前类别可用的筛选选项
+  const filterOptions = useMemo(() => {
+    if (activeCategoryType === 'expense') {
+      return EXPENSE_STATUS.map(s => ({ id: s.id, name: s.name, color: s.color, bg: s.bg }));
+    } else if (activeCategoryType === 'date') {
+      return [
+        { id: 'not_expired', name: '未过期', color: 'text-green-600', bg: 'bg-green-100' },
+        { id: 'expired', name: '已过期', color: 'text-gray-500', bg: 'bg-gray-100' },
+      ];
+    } else if (activeCategoryType === 'membership') {
+      return MEMBERSHIP_STATUS.map(s => ({ id: s.id, name: s.name, color: s.color, bg: s.bg }));
+    }
+    return [];
+  }, [activeCategoryType]);
+  
+  // 处理筛选选项变化
+  const handleFilterChange = (filterId) => {
+    if (filterId === 'all') {
+      // 点击"全部"：选中全部，取消其他
+      setStatusFilter(['all']);
+    } else {
+      setStatusFilter(prev => {
+        // 移除 'all'
+        let newFilter = prev.filter(f => f !== 'all');
+        
+        if (newFilter.includes(filterId)) {
+          // 已选中，取消选中
+          newFilter = newFilter.filter(f => f !== filterId);
+          // 如果取消后为空，恢复为全部
+          if (newFilter.length === 0) {
+            return ['all'];
+          }
+        } else {
+          // 未选中，添加选中
+          newFilter = [...newFilter, filterId];
+          // 如果选中了所有子选项，自动变为"全部"
+          if (filterOptions.length > 0 && newFilter.length === filterOptions.length) {
+            return ['all'];
+          }
+        }
+        return newFilter;
+      });
+    }
+  };
+  
+  // 点击外部关闭筛选下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+  
   const filteredNotes = useMemo(() => {
-    return notes.filter(note => {
+    let result = notes.filter(note => {
       const matchesCategory = activeCategory === 'all' || note.categoryId === activeCategory;
       const matchesSearch = searchQuery === '' || note.title.toLowerCase().includes(searchQuery.toLowerCase()) || note.note?.toLowerCase().includes(searchQuery.toLowerCase()) || (!note.isPrivate && (note.username?.toLowerCase().includes(searchQuery.toLowerCase()) || note.url?.toLowerCase().includes(searchQuery.toLowerCase()) || note.content?.toLowerCase().includes(searchQuery.toLowerCase())));
-      return matchesCategory && matchesSearch;
+      
+      // 筛选逻辑
+      let matchesFilter = true;
+      if (!statusFilter.includes('all') && activeCategoryType) {
+        if (activeCategoryType === 'expense') {
+          // 报销记录：按状态筛选
+          matchesFilter = statusFilter.includes(note.status);
+        } else if (activeCategoryType === 'date') {
+          // 重要日期：按过期/未过期筛选
+          const today = new Date().toISOString().split('T')[0];
+          const isExpired = note.date < today;
+          if (statusFilter.includes('expired') && statusFilter.includes('not_expired')) {
+            matchesFilter = true;
+          } else if (statusFilter.includes('expired')) {
+            matchesFilter = isExpired;
+          } else if (statusFilter.includes('not_expired')) {
+            matchesFilter = !isExpired;
+          }
+        } else if (activeCategoryType === 'membership') {
+          // 会员管理：按状态筛选
+          const memberStatus = getMembershipStatus(note.endDate);
+          matchesFilter = statusFilter.includes(memberStatus);
+        }
+      }
+      
+      return matchesCategory && matchesSearch && matchesFilter;
     });
-  }, [notes, activeCategory, searchQuery]);
+    
+    // 排序逻辑
+    result = [...result].sort((a, b) => {
+      let compareValue = 0;
+      
+      if (sortBy === 'date' && activeCategoryType) {
+        let dateA, dateB;
+        
+        if (activeCategoryType === 'expense') {
+          // 报销记录按购买日期排序
+          dateA = a.purchaseDate || '';
+          dateB = b.purchaseDate || '';
+        } else if (activeCategoryType === 'date') {
+          // 重要日期按提醒日期排序
+          dateA = a.date || '';
+          dateB = b.date || '';
+        } else if (activeCategoryType === 'membership') {
+          // 会员管理按到期日期排序
+          dateA = a.endDate || '';
+          dateB = b.endDate || '';
+        }
+        
+        // 日期相同则按创建时间排序
+        if (dateA === dateB) {
+          compareValue = (b.id || 0) - (a.id || 0);
+        } else {
+          compareValue = dateB.localeCompare(dateA);
+        }
+      } else if (sortBy === 'price' && activeCategoryType === 'membership') {
+        // 会员管理按价格排序
+        const priceA = calculateMembershipTotalCost(a);
+        const priceB = calculateMembershipTotalCost(b);
+        compareValue = priceB - priceA;
+      } else {
+        // 按创建时间排序（id是时间戳）
+        compareValue = (b.id || 0) - (a.id || 0);
+      }
+      
+      // 根据排序顺序调整
+      return sortOrder === 'asc' ? -compareValue : compareValue;
+    });
+    
+    return result;
+  }, [notes, activeCategory, searchQuery, sortBy, sortOrder, activeCategoryType, statusFilter]);
   
   const privateCount = notes.filter(n => n.isPrivate).length;
   
   // 登录处理
   const handleLogin = (user) => {
     setCurrentUser(user);
+    // 会话注册由useEffect自动处理
   };
   
   // 登出处理
   const handleLogout = () => {
+    // 清除会话（使用 Electron API）
+    if (window.electronAPI?.clearSession) {
+      window.electronAPI.clearSession();
+    }
+    
     setCurrentUser(null);
     // 重置用户数据
     setCategories(DEFAULT_CATEGORIES);
@@ -2744,6 +4426,9 @@ export default function InfoNotesApp() {
       // 从注册用户列表中移除
       setRegisteredUsers(registeredUsers.filter(u => u.id !== currentUser.id));
       
+      // 从保存的账号列表中移除
+      setSavedAccounts(savedAccounts.filter(a => a.username !== currentUser.username));
+      
       // 登出
       handleLogout();
       setIsDeleteAccountModalOpen(false);
@@ -2783,6 +4468,8 @@ export default function InfoNotesApp() {
         onLogin={handleLogin} 
         registeredUsers={registeredUsers}
         setRegisteredUsers={setRegisteredUsers}
+        savedAccounts={savedAccounts}
+        setSavedAccounts={setSavedAccounts}
       />
     );
   }
@@ -2929,6 +4616,7 @@ export default function InfoNotesApp() {
         />
         
         <ExpenseStats notes={notes} categories={categories} />
+        <MembershipStats notes={notes} categories={categories} />
         
         {privateCount > 0 && (
           <div className="mb-4 p-3 rounded-lg bg-violet-50 flex items-center gap-2">
@@ -2938,19 +4626,58 @@ export default function InfoNotesApp() {
         )}
         
         <nav className="space-y-1 flex-1 overflow-y-auto">
-          <button onClick={() => setActiveCategory('all')} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${activeCategory === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+          <button onClick={() => { setActiveCategory('all'); setSortBy('created'); setSortOrder('desc'); setStatusFilter(['all']); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${activeCategory === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>
             <div className="flex items-center gap-2"><Folder size={18} /><span className="font-medium">全部</span></div>
             <span className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === 'all' ? 'bg-blue-100' : 'bg-gray-100'}`}>{notes.length}</span>
           </button>
           <div className="h-px bg-gray-100 my-2" />
-          {categories.map(cat => {
+          {categories.map((cat, index) => {
             const Icon = getIconComponent(cat.iconName);
             const colorClasses = getColorClasses(cat.color);
             const count = notes.filter(n => n.categoryId === cat.id).length;
+            const isDragging = draggedCategory === cat.id;
+            const isDragOver = dragOverCategory === cat.id;
+            
             return (
-              <div key={cat.id} className="group relative">
-                <button onClick={() => setActiveCategory(cat.id)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${activeCategory === cat.id ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+              <div 
+                key={cat.id} 
+                className={`group relative transition-all ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-t-2 border-blue-500' : ''}`}
+                draggable
+                onDragStart={(e) => {
+                  setDraggedCategory(cat.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragEnd={() => {
+                  setDraggedCategory(null);
+                  setDragOverCategory(null);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (draggedCategory && draggedCategory !== cat.id) {
+                    setDragOverCategory(cat.id);
+                  }
+                }}
+                onDragLeave={() => {
+                  setDragOverCategory(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedCategory && draggedCategory !== cat.id) {
+                    // 重新排序
+                    const dragIndex = categories.findIndex(c => c.id === draggedCategory);
+                    const dropIndex = categories.findIndex(c => c.id === cat.id);
+                    const newCategories = [...categories];
+                    const [draggedItem] = newCategories.splice(dragIndex, 1);
+                    newCategories.splice(dropIndex, 0, draggedItem);
+                    setCategories(newCategories);
+                  }
+                  setDraggedCategory(null);
+                  setDragOverCategory(null);
+                }}
+              >
+                <button onClick={() => { setActiveCategory(cat.id); setSortBy('created'); setSortOrder('desc'); setStatusFilter(['all']); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${activeCategory === cat.id ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>
                   <div className="flex items-center gap-2">
+                    <GripVertical size={14} className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing" />
                     <div className={`w-6 h-6 rounded-md ${colorClasses.bg} flex items-center justify-center`}><Icon size={14} className={colorClasses.text} /></div>
                     <span className="font-medium text-sm">{cat.name}</span>
                   </div>
@@ -2970,11 +4697,102 @@ export default function InfoNotesApp() {
       
       {/* Main */}
       <div className="flex-1 p-6">
-        <div className="mb-6">
-          <div className="relative max-w-md">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input type="text" placeholder="搜索便签..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
           </div>
+          
+          {/* 排序按钮（仅报销记录和重要日期显示） */}
+          {(activeCategoryType === 'expense' || activeCategoryType === 'date' || activeCategoryType === 'membership') && (
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="appearance-none pl-9 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700 cursor-pointer"
+                >
+                  <option value="created">按创建时间</option>
+                  <option value="date">
+                    {activeCategoryType === 'expense' ? '按购买日期' : activeCategoryType === 'membership' ? '按到期日期' : '按提醒日期'}
+                  </option>
+                  {activeCategoryType === 'membership' && <option value="price">按累计花费</option>}
+                </select>
+                <ArrowUpDown size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <ChevronDown size={16} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+              
+              {/* 升序/降序切换按钮 */}
+              <button
+                onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm text-gray-700"
+                title={sortOrder === 'desc' ? '当前：降序（新→旧）' : '当前：升序（旧→新）'}
+              >
+                {sortOrder === 'desc' ? (
+                  <>
+                    <ArrowDown size={16} className="text-blue-500" />
+                    <span>降序</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowUp size={16} className="text-blue-500" />
+                    <span>升序</span>
+                  </>
+                )}
+              </button>
+              
+              {/* 筛选按钮 */}
+              <div className="relative" ref={filterRef}>
+                <button
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={`flex items-center gap-1.5 px-3 py-2.5 border rounded-xl transition-colors text-sm ${
+                    statusFilter.includes('all') 
+                      ? 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50' 
+                      : 'bg-blue-50 border-blue-200 text-blue-600'
+                  }`}
+                >
+                  <Filter size={16} className={statusFilter.includes('all') ? 'text-gray-400' : 'text-blue-500'} />
+                  <span>筛选</span>
+                  {!statusFilter.includes('all') && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+                      {statusFilter.length}
+                    </span>
+                  )}
+                </button>
+                
+                {/* 筛选下拉菜单 */}
+                {isFilterOpen && (
+                  <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50 min-w-[160px]">
+                    {/* 全部选项 */}
+                    <label className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={statusFilter.includes('all')}
+                        onChange={() => handleFilterChange('all')}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700 font-medium">全部</span>
+                    </label>
+                    
+                    <div className="h-px bg-gray-100 my-1" />
+                    
+                    {/* 各状态选项 */}
+                    {filterOptions.map(option => (
+                      <label key={option.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={statusFilter.includes('all') || statusFilter.includes(option.id)}
+                          onChange={() => handleFilterChange(option.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                        />
+                        <span className={`text-sm ${option.color}`}>{option.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -3001,8 +4819,15 @@ export default function InfoNotesApp() {
       </div>
       </div>
       
-      <NoteModal isOpen={isNoteModalOpen} onClose={() => { setIsNoteModalOpen(false); setEditingNote(null); }} onSave={(note) => { if (editingNote) setNotes(notes.map(n => n.id === note.id ? note : n)); else setNotes([note, ...notes]); setEditingNote(null); }} editingNote={editingNote} categories={categories} />
+      <NoteModal isOpen={isNoteModalOpen} onClose={() => { setIsNoteModalOpen(false); setEditingNote(null); }} onSave={(note) => { if (editingNote) setNotes(notes.map(n => n.id === note.id ? note : n)); else setNotes([note, ...notes]); setEditingNote(null); }} editingNote={editingNote} categories={categories} defaultCategoryId={activeCategory !== 'all' ? activeCategory : null} />
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }} categories={categories} onSave={(cat) => { const exists = categories.find(c => c.id === cat.id); if (exists) setCategories(categories.map(c => c.id === cat.id ? cat : c)); else setCategories([...categories, cat]); setEditingCategory(null); }} onDelete={(id) => { setCategories(categories.filter(c => c.id !== id)); setNotes(notes.filter(n => n.categoryId !== id)); if (activeCategory === id) setActiveCategory('all'); }} editingCategory={editingCategory} />
+      
+      {/* 提醒弹窗 */}
+      <ReminderModal 
+        isOpen={isReminderModalOpen} 
+        onClose={() => setIsReminderModalOpen(false)} 
+        note={reminderNote} 
+      />
       
       {/* 便签详情弹窗 */}
       <NoteDetailModal 

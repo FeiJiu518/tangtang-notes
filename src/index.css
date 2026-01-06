@@ -16,6 +16,25 @@ html, body, #root {
   background: transparent;
 }
 
+/* 允许文字选择 */
+body {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* 可选择的文字区域 */
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+
+/* 不可选择的区域（按钮等） */
+button, .no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* 标题栏拖拽区域 */
 .titlebar-drag {
   -webkit-app-region: drag;

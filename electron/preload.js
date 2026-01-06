@@ -25,6 +25,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   windowClose: () => ipcRenderer.invoke('window-close'),
   windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
   
+  // 登录会话管理
+  checkUserSession: (userId) => ipcRenderer.invoke('check-user-session', userId),
+  registerSession: (userId, username) => ipcRenderer.invoke('register-session', { userId, username }),
+  clearSession: () => ipcRenderer.invoke('clear-session'),
+  
   // 平台信息
   platform: process.platform,
   isElectron: true,
