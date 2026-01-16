@@ -3171,6 +3171,13 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCa
       // 基础表单数据
       const baseFormData = { images: [], files: [], hasReminder: false, reminderTime: '09:00:00', reminderSound: true };
       
+      // 如果是报销记录类型，设置默认日期和金额
+      if (initialCat?.noteType === 'expense') {
+        const today = new Date().toISOString().split('T')[0];
+        baseFormData.purchaseDate = today;
+        baseFormData.amount = 0;
+      }
+      
       // 如果是会员管理类型，设置默认日期
       if (initialCat?.noteType === 'membership') {
         const today = new Date();
@@ -3204,6 +3211,18 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCa
         endDate: endDate.toISOString().split('T')[0],
         reminderDays: prev.reminderDays || 3,
         reminderSound: prev.reminderSound ?? true
+      }));
+    }
+  }, [selectedCategory, editingNote]);
+  
+  // 当切换类别时，如果是报销记录，设置默认日期和金额
+  React.useEffect(() => {
+    if (!editingNote && selectedCategory?.noteType === 'expense' && !formData.purchaseDate) {
+      const today = new Date().toISOString().split('T')[0];
+      setFormData(prev => ({
+        ...prev,
+        purchaseDate: today,
+        amount: prev.amount ?? 0
       }));
     }
   }, [selectedCategory, editingNote]);
@@ -4696,7 +4715,7 @@ export default function InfoNotesApp() {
       </div>
       
       {/* Main */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 overflow-y-auto">
         <div className="mb-6 flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
