@@ -20,7 +20,7 @@
 
 一款简洁实用的桌面便签应用，帮助你管理账号密码、网址收藏、重要日期、报销记录、会员订阅等信息。
 
-![版本](https://img.shields.io/badge/版本-v1.1.0-blue)
+![版本](https://img.shields.io/badge/版本-v1.1.1-blue)
 ![平台](https://img.shields.io/badge/平台-Windows-green)
 ![技术栈](https://img.shields.io/badge/技术栈-Electron%20%2B%20React-purple)
 
@@ -96,6 +96,15 @@ npm run electron:build:win
 ---
 
 ## 📋 更新日志
+
+
+### v1.1.1 (2025-01-16)
+
+#### ✨ 功能优化
+- **报销记录优化** - 新建报销记录时自动填充当前日期和默认金额
+- **界面优化** - 卡片区域添加垂直滚动支持,便签数量较多时显示滚动条
+
+---
 
 ### v1.1.0 (2025-01-06)
 
