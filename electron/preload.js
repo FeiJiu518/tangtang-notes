@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 窗口收缩/展开
   expandWindow: () => ipcRenderer.invoke('expand-window'),
   getCollapseState: () => ipcRenderer.invoke('get-collapse-state'),
+  updateCollapseHeight: (height) => ipcRenderer.invoke('update-collapse-height', height),
   onCollapseStateChanged: (callback) => {
     ipcRenderer.on('collapse-state-changed', (event, data) => callback(data));
   },
@@ -29,7 +30,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkUserSession: (userId) => ipcRenderer.invoke('check-user-session', userId),
   registerSession: (userId, username) => ipcRenderer.invoke('register-session', { userId, username }),
   clearSession: () => ipcRenderer.invoke('clear-session'),
-  
+
+  // 关闭行为设置
+  setCloseBehavior: (behavior) => ipcRenderer.invoke('set-close-behavior', behavior),
+  getCloseBehavior: () => ipcRenderer.invoke('get-close-behavior'),
+  confirmClose: (behavior) => ipcRenderer.invoke('confirm-close', behavior),
+  onShowCloseDialog: (callback) => {
+    ipcRenderer.on('show-close-dialog', () => callback());
+  },
+
   // 平台信息
   platform: process.platform,
   isElectron: true,

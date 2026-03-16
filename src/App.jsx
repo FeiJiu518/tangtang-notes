@@ -11,7 +11,8 @@ import {
   ChevronLeft, ChevronRight, BellOff, BellRing, Volume2, VolumeX,
   LogOut, User, UserPlus, Minus, Square, Maximize2, ChevronDown,
   Upload, File, FileImage, Paperclip, Download, ArrowUpDown, CalendarDays,
-  ArrowUp, ArrowDown, Diamond, XCircle, RefreshCw, Crown, GripVertical, Filter
+  ArrowUp, ArrowDown, Diamond, XCircle, RefreshCw, Crown, GripVertical, Filter,
+  Monitor
 } from 'lucide-react';
 
 // 可选图标库
@@ -2556,6 +2557,66 @@ function PrivatePinModal({ isOpen, onClose, onSuccess, pin, setPin: setGlobalPin
   );
 }
 
+// 关闭行为设置组件
+function CloseBehaviorSetting() {
+  const [behavior, setBehavior] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (window.electronAPI?.getCloseBehavior) {
+      window.electronAPI.getCloseBehavior().then((val) => setBehavior(val));
+    }
+  }, []);
+
+  const handleChange = (newBehavior) => {
+    setBehavior(newBehavior);
+    if (window.electronAPI?.setCloseBehavior) {
+      window.electronAPI.setCloseBehavior(newBehavior);
+    }
+    setIsExpanded(false);
+  };
+
+  const behaviorLabel = behavior === 'tray' ? '最小化到托盘' : behavior === 'quit' ? '直接退出' : '每次询问';
+
+  return (
+    <div>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors text-left"
+      >
+        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+          <Monitor size={18} className="text-purple-600" />
+        </div>
+        <div className="flex-1">
+          <p className="font-medium text-gray-800">关闭行为</p>
+          <p className="text-xs text-gray-500">{behaviorLabel}</p>
+        </div>
+        <ChevronDown size={18} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isExpanded && (
+        <div className="ml-16 mr-4 mt-1 space-y-1">
+          {[
+            { value: null, label: '每次询问' },
+            { value: 'tray', label: '最小化到托盘' },
+            { value: 'quit', label: '直接退出' },
+          ].map((opt) => (
+            <button
+              key={String(opt.value)}
+              onClick={() => handleChange(opt.value)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                behavior === opt.value ? 'bg-purple-50 text-purple-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // 个人主页弹窗
 function ProfileModal({ isOpen, onClose, currentUser, userAvatar, onChangeAvatar, onLogout, onDeleteAccount }) {
   if (!isOpen) return null;
@@ -2603,6 +2664,12 @@ function ProfileModal({ isOpen, onClose, currentUser, userAvatar, onChangeAvatar
         
         {/* 菜单选项 */}
         <div className="p-4 space-y-2">
+          {/* 关闭行为设置 */}
+          <CloseBehaviorSetting onClose={onClose} />
+
+          {/* 分隔线 */}
+          <div className="h-px bg-gray-100 my-2" />
+
           {/* 退出登录 */}
           <button
             onClick={() => { onLogout(); onClose(); }}
@@ -2639,7 +2706,7 @@ function ProfileModal({ isOpen, onClose, currentUser, userAvatar, onChangeAvatar
         
         {/* 底部版本信息 */}
         <div className="px-4 pb-4 text-center">
-          <p className="text-xs text-gray-400">糖糖便签 v1.0.0</p>
+          <p className="text-xs text-gray-400">糖糖便签 v1.2.0</p>
         </div>
       </div>
     </div>
@@ -3846,6 +3913,10 @@ export default function InfoNotesApp() {
   // 窗口收缩状态
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [collapseSide, setCollapseSide] = useState('right');
+
+  // 关闭行为弹窗状态
+  const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+  const [rememberCloseChoice, setRememberCloseChoice] = useState(true);
   
   // 类别拖拽排序状态
   const [draggedCategory, setDraggedCategory] = useState(null);
@@ -3857,6 +3928,15 @@ export default function InfoNotesApp() {
       window.electronAPI.onCollapseStateChanged((data) => {
         setIsCollapsed(data.isCollapsed);
         if (data.side) setCollapseSide(data.side);
+      });
+    }
+  }, []);
+
+  // 监听关闭弹窗事件
+  useEffect(() => {
+    if (window.electronAPI?.onShowCloseDialog) {
+      window.electronAPI.onShowCloseDialog(() => {
+        setIsCloseDialogOpen(true);
       });
     }
   }, []);
@@ -3872,7 +3952,7 @@ export default function InfoNotesApp() {
     
     // 组件卸载时（比如登出）不需要手动清理，因为 handleLogout 会处理
   }, [currentUser]);
-  
+
   // 未登录时自动展开窗口
   useEffect(() => {
     if (isCollapsed && !currentUser) {
@@ -3881,6 +3961,24 @@ export default function InfoNotesApp() {
       }
     }
   }, [isCollapsed, currentUser]);
+
+  // 收缩状态下根据分类数量动态调整窗口高度
+  useEffect(() => {
+    if (isCollapsed && currentUser && window.electronAPI?.updateCollapseHeight) {
+      // 顶部区域(pt-4 + logo 44 + mb-2 + avatar 36 + pb-3): ~120px
+      // 每个图标: 44px, 图标间距: 10px (gap-2.5), 图标区域上下内边距 py-3: 24px
+      // 底部按钮区域(pb-3 + button 36): ~50px, 余量: ~10px
+      const topArea = 120;
+      const iconSize = 44;
+      const iconGap = 10;
+      const bottomArea = 50;
+      const padding = 24;
+      const buffer = 10;
+      const count = categories.length;
+      const neededHeight = topArea + padding + count * iconSize + Math.max(0, count - 1) * iconGap + bottomArea + buffer;
+      window.electronAPI.updateCollapseHeight(neededHeight);
+    }
+  }, [isCollapsed, currentUser, categories.length]);
   
   // 提醒功能：已触发的提醒ID集合（防止重复提醒）
   const triggeredRemindersRef = useRef(new Set());
@@ -4905,6 +5003,53 @@ export default function InfoNotesApp() {
         imageData={avatarToCrop}
         onConfirm={handleAvatarCropConfirm}
       />
+
+      {/* 关闭行为确认弹窗 */}
+      {isCloseDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-2xl p-6 w-80 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">关闭窗口</h3>
+            <p className="text-sm text-gray-600 mb-5">你想要关闭应用还是最小化到系统托盘？</p>
+
+            <label className="flex items-center gap-2 mb-5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberCloseChoice}
+                onChange={(e) => setRememberCloseChoice(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-600">记住我的选择</span>
+            </label>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setIsCloseDialogOpen(false);
+                  if (rememberCloseChoice && window.electronAPI?.setCloseBehavior) {
+                    window.electronAPI.setCloseBehavior('tray');
+                  }
+                  window.electronAPI?.confirmClose('tray');
+                }}
+                className="flex-1 px-4 py-2.5 bg-blue-500 text-white text-sm rounded-xl hover:bg-blue-600 transition-colors"
+              >
+                最小化到托盘
+              </button>
+              <button
+                onClick={() => {
+                  setIsCloseDialogOpen(false);
+                  if (rememberCloseChoice && window.electronAPI?.setCloseBehavior) {
+                    window.electronAPI.setCloseBehavior('quit');
+                  }
+                  window.electronAPI?.confirmClose('quit');
+                }}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 text-sm rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                直接退出
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
