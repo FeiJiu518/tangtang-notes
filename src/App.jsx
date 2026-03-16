@@ -757,7 +757,7 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers, savedAccounts,
   return (
     <div className="h-screen bg-transparent flex flex-col p-1">
       {/* 圆角容器 - 细边框 */}
-      <div 
+      <div
         className="h-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col rounded-2xl overflow-hidden border border-gray-200/80"
       >
       {/* 自定义标题栏 - 仅在 Electron 中显示 */}
@@ -4577,7 +4577,7 @@ export default function InfoNotesApp() {
       </div>
     );
   }
-  
+
   // 如果未登录，显示登录页面
   if (!currentUser) {
     return (
@@ -4594,11 +4594,11 @@ export default function InfoNotesApp() {
   // 如果处于收缩状态，显示收缩视图
   if (isCollapsed && currentUser) {
     return (
-      <div 
+      <div
         className="h-screen bg-white flex flex-col select-none rounded-2xl overflow-hidden border border-gray-200/80"
       >
         {/* 顶部拖动区域 */}
-        <div 
+        <div
           className="pt-4 pb-3 bg-gradient-to-b from-blue-500 to-purple-500 flex flex-col items-center rounded-t-2xl cursor-move"
           style={{ WebkitAppRegion: 'drag' }}
           title="拖动调整位置"
@@ -4650,11 +4650,11 @@ export default function InfoNotesApp() {
       </div>
     );
   }
-  
+
   return (
     <div className="h-screen bg-transparent flex flex-col p-1">
       {/* 圆角容器 - 细边框 */}
-      <div 
+      <div
         className="h-full bg-gray-50 flex flex-col rounded-2xl overflow-hidden border border-gray-200/80"
       >
       {/* 自定义标题栏 - 仅在 Electron 中显示 */}
@@ -4819,7 +4819,8 @@ export default function InfoNotesApp() {
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input type="text" placeholder="搜索便签..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
           </div>
-          
+          <button onClick={() => { setEditingNote(null); setIsNoteModalOpen(true); }} className="p-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors" title="新建便签"><Plus size={18} /></button>
+
           {/* 排序按钮（仅报销记录和重要日期显示） */}
           {(activeCategoryType === 'expense' || activeCategoryType === 'date' || activeCategoryType === 'membership') && (
             <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 {
   "name": "info-notes-app",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "糖糖便签 - 你的专属便签本",
   "main": "electron/main.js",
   "author": "Your Name",
@@ -9,7 +9,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron . --dev\"",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5174 && electron . --dev\"",
     "electron:build": "vite build && electron-builder",
     "electron:build:win": "vite build && electron-builder --win"
   },
@@ -45,11 +45,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "public/icon.ico"
