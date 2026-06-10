@@ -12,7 +12,7 @@ import {
   LogOut, User, UserPlus, Minus, Square, Maximize2, ChevronDown,
   Upload, File, FileImage, Paperclip, Download, ArrowUpDown, CalendarDays,
   ArrowUp, ArrowDown, Diamond, XCircle, RefreshCw, Crown, GripVertical, Filter,
-  Monitor
+  Monitor, Pin
 } from 'lucide-react';
 
 // 可选图标库
@@ -64,6 +64,7 @@ const ICON_OPTIONS = [
   { name: 'Target', icon: Target },
   { name: 'Diamond', icon: Diamond },
   { name: 'Crown', icon: Crown },
+  { name: 'CheckCircle2', icon: CheckCircle2 },
 ];
 
 // 可选颜色
@@ -96,6 +97,7 @@ const NOTE_TYPES = [
   { id: 'date', name: '日期提醒', description: '显示倒计时 + 提醒', defaultPrivate: false, supportsImages: false, defaultIcon: 'Calendar', defaultColor: 'rose' },
   { id: 'expense', name: '报销记录', description: '金额、发票、状态 + 图片', defaultPrivate: false, supportsImages: true, defaultIcon: 'Receipt', defaultColor: 'emerald' },
   { id: 'membership', name: '会员管理', description: '会员到期提醒、费用统计', defaultPrivate: false, supportsImages: false, defaultIcon: 'Diamond', defaultColor: 'violet' },
+  { id: 'todolist', name: '待办事项', description: '可勾选的任务清单', defaultPrivate: false, supportsImages: false, defaultIcon: 'CheckCircle2', defaultColor: 'teal' },
 ];
 
 // 报销状态
@@ -130,6 +132,7 @@ const DEFAULT_CATEGORIES = [
   { id: 'date', name: '重要日期', iconName: 'Calendar', color: 'rose', noteType: 'date' },
   { id: 'expense', name: '报销记录', iconName: 'Receipt', color: 'emerald', noteType: 'expense' },
   { id: 'membership', name: '会员管理', iconName: 'Diamond', color: 'violet', noteType: 'membership' },
+  { id: 'todolist', name: '待办事项', iconName: 'CheckCircle2', color: 'teal', noteType: 'todolist' },
   { id: 'note', name: '通用备忘', iconName: 'StickyNote', color: 'gray', noteType: 'simple' },
 ];
 
@@ -1743,10 +1746,23 @@ function PrivateMask({ onUnlock }) {
   );
 }
 
-function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDetail, pin, onSetPin }) {
+function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDetail, pin, onSetPin, onPinNote, isPinned }) {
   const Icon = getIconComponent(category.iconName);
   const colorClasses = getColorClasses(category.color);
   const isPrivate = note.isPrivate;
+  const [favicon, setFavicon] = useState(null);
+
+  useEffect(() => {
+    if (category.noteType === 'link') {
+      if (note.customFavicon) {
+        setFavicon(note.customFavicon);
+      } else if (note.url && window.electronAPI?.fetchFavicon) {
+        window.electronAPI.fetchFavicon(note.url).then(res => {
+          if (res.success) setFavicon(res.favicon);
+        });
+      }
+    }
+  }, [note.url, note.customFavicon, category.noteType]);
   
   // 点击卡片处理
   const handleCardClick = (e) => {
@@ -1869,6 +1885,29 @@ function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDeta
           </div>
         );
       
+      case 'todolist':
+        const completedCount = (note.items || []).filter(i => i.completed).length;
+        const totalCount = (note.items || []).length;
+        return (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-teal-50 rounded-full h-2 overflow-hidden">
+                <div className="bg-teal-500 h-full rounded-full transition-all" style={{ width: totalCount > 0 ? `${(completedCount / totalCount) * 100}%` : '0%' }} />
+              </div>
+              <span className="text-xs font-medium text-teal-700">{completedCount}/{totalCount}</span>
+            </div>
+            <div className="space-y-1">
+              {(note.items || []).slice(0, 3).map(item => (
+                <div key={item.id} className="flex items-center gap-2 text-sm">
+                  <span className={item.completed ? 'text-teal-400' : 'text-gray-400'}>{item.completed ? '☑' : '☐'}</span>
+                  <span className={`truncate ${item.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>{item.text}</span>
+                </div>
+              ))}
+              {totalCount > 3 && <span className="text-xs text-gray-400">...还有 {totalCount - 3} 项</span>}
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="bg-gray-50 rounded-lg px-3 py-2">
@@ -1877,21 +1916,26 @@ function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDeta
         );
     }
   };
-  
+
   return (
-    <div 
+    <div
       onClick={handleCardClick}
       className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
     >
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-lg ${colorClasses.bg} flex items-center justify-center relative`}>
-            <Icon size={16} className={colorClasses.text} />
+        <div className="flex items-start gap-2">
+          <div className={`w-8 h-8 rounded-lg ${colorClasses.bg} flex items-center justify-center relative shrink-0`}>
+            {favicon ? <img src={favicon} className="w-5 h-5 rounded" alt="" /> : <Icon size={16} className={colorClasses.text} />}
             {isPrivate && <div className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 rounded-full flex items-center justify-center"><Lock size={8} className="text-white" /></div>}
           </div>
           <h3 className="font-semibold text-gray-800">{note.title}</h3>
         </div>
         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+          {window.electronAPI && (
+            <button onClick={() => onPinNote && onPinNote(note)} className={`p-1.5 rounded-md transition-colors ${isPinned ? 'bg-teal-100 text-teal-600' : 'hover:bg-gray-100 text-gray-400'}`} title={isPinned ? '取消钉住' : '钉到桌面'}>
+              <Pin size={14} />
+            </button>
+          )}
           <button onClick={() => onEdit(note)} className="p-1.5 rounded-md hover:bg-gray-100"><Edit3 size={14} className="text-gray-400" /></button>
           <button onClick={() => onDelete(note.id)} className="p-1.5 rounded-md hover:bg-red-50"><Trash2 size={14} className="text-gray-400 hover:text-red-500" /></button>
         </div>
@@ -1905,12 +1949,26 @@ function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDeta
 }
 
 // 便签详情弹窗
-function NoteDetailModal({ isOpen, onClose, note, category, onUpdateStatus, onEdit, onDelete }) {
+function NoteDetailModal({ isOpen, onClose, note, category, onUpdateStatus, onUpdateNote, onEdit, onDelete, onPinNote, isPinned }) {
   const [showPassword, setShowPassword] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
+  const [favicon, setFavicon] = useState(null);
+
+  useEffect(() => {
+    if (!note || !category) return;
+    if (category.noteType === 'link') {
+      if (note.customFavicon) {
+        setFavicon(note.customFavicon);
+      } else if (note.url && window.electronAPI?.fetchFavicon) {
+        window.electronAPI.fetchFavicon(note.url).then(res => {
+          if (res.success) setFavicon(res.favicon);
+        });
+      }
+    }
+  }, [note?.id, note?.url, note?.customFavicon, category?.noteType]);
+
   if (!isOpen || !note || !category) return null;
   
   const Icon = getIconComponent(category.iconName);
@@ -2198,7 +2256,45 @@ function NoteDetailModal({ isOpen, onClose, note, category, onUpdateStatus, onEd
             )}
           </div>
         );
-      
+
+      case 'todolist':
+        const todoItems = note.items || [];
+        const todoCompleted = todoItems.filter(i => i.completed).length;
+        const todoTotal = todoItems.length;
+        const toggleTodoItem = (itemId) => {
+          const updatedItems = todoItems.map(item =>
+            item.id === itemId ? { ...item, completed: !item.completed } : item
+          );
+          onUpdateNote && onUpdateNote(note.id, { items: updatedItems });
+        };
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 px-4 py-3 bg-teal-50 rounded-xl">
+              <div className="flex-1 bg-teal-100 rounded-full h-3 overflow-hidden">
+                <div className="bg-teal-500 h-full rounded-full transition-all" style={{ width: todoTotal > 0 ? `${(todoCompleted / todoTotal) * 100}%` : '0%' }} />
+              </div>
+              <span className="text-sm font-bold text-teal-700">{todoCompleted}/{todoTotal}</span>
+            </div>
+            <div className="space-y-1">
+              {todoItems.map(item => (
+                <div
+                  key={item.id}
+                  onClick={() => toggleTodoItem(item.id)}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${item.completed ? 'bg-teal-500 border-teal-500' : 'border-gray-300'}`}>
+                    {item.completed && <Check size={12} className="text-white" />}
+                  </div>
+                  <span className={`flex-1 ${item.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>{item.text}</span>
+                </div>
+              ))}
+              {todoTotal === 0 && (
+                <div className="text-center py-8 text-gray-400 text-sm">暂无待办项，点击编辑添加</div>
+              )}
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="space-y-4">
@@ -2263,17 +2359,51 @@ function NoteDetailModal({ isOpen, onClose, note, category, onUpdateStatus, onEd
           {/* 头部 */}
           <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl ${colorClasses.bg} flex items-center justify-center`}>
-                <Icon size={20} className={colorClasses.text} />
-              </div>
+              {category.noteType === 'link' ? (
+                <div
+                  className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:shadow transition-all group relative"
+                  onClick={async () => {
+                    if (window.electronAPI?.selectIconFile) {
+                      const result = await window.electronAPI.selectIconFile();
+                      if (result.success) {
+                        setFavicon(result.favicon);
+                        onUpdateNote(note.id, { customFavicon: result.favicon });
+                      }
+                    }
+                  }}
+                  title="点击更换图标"
+                >
+                  {favicon ? (
+                    <img src={favicon} alt="" className="w-6 h-6" draggable="false" />
+                  ) : (
+                    <Icon size={20} className={colorClasses.text} />
+                  )}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shadow-sm">
+                    <Edit3 size={8} className="text-white" />
+                  </div>
+                </div>
+              ) : (
+                <div className={`w-10 h-10 rounded-xl ${colorClasses.bg} flex items-center justify-center`}>
+                  <Icon size={20} className={colorClasses.text} />
+                </div>
+              )}
               <div>
                 <h2 className="text-lg font-semibold text-gray-800">{note.title}</h2>
                 <p className="text-sm text-gray-500">{category.name}</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button 
-                onClick={handleEdit} 
+              {window.electronAPI && (
+                <button
+                  onClick={() => onPinNote && onPinNote(note)}
+                  className={`p-2 rounded-lg transition-colors ${isPinned ? 'bg-teal-100 text-teal-600' : 'hover:bg-gray-100 text-gray-500'}`}
+                  title={isPinned ? '取消钉到桌面' : '钉到桌面'}
+                >
+                  <Pin size={18} />
+                </button>
+              )}
+              <button
+                onClick={handleEdit}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 title="编辑"
               >
@@ -3257,6 +3387,11 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCa
         baseFormData.reminderDays = 3;
         baseFormData.reminderSound = true;
       }
+
+      // 如果是待办事项类型，初始化空列表
+      if (initialCat?.noteType === 'todolist') {
+        baseFormData.items = [];
+      }
       
       setFormData(baseFormData);
       const noteType = NOTE_TYPES.find(t => t.id === initialCat?.noteType);
@@ -3652,12 +3787,64 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCa
             </div>
           </>
         );
+      case 'todolist':
+        const addTodoItem = () => {
+          const items = formData.items || [];
+          const newItem = { id: Date.now(), text: '', completed: false, order: items.length };
+          setFormData({ ...formData, items: [...items, newItem] });
+        };
+        const updateTodoItem = (itemId, text) => {
+          const items = (formData.items || []).map(item =>
+            item.id === itemId ? { ...item, text } : item
+          );
+          setFormData({ ...formData, items });
+        };
+        const removeTodoItem = (itemId) => {
+          const items = (formData.items || []).filter(item => item.id !== itemId);
+          setFormData({ ...formData, items });
+        };
+        const moveTodoItem = (index, direction) => {
+          const items = [...(formData.items || [])];
+          const newIndex = index + direction;
+          if (newIndex < 0 || newIndex >= items.length) return;
+          [items[index], items[newIndex]] = [items[newIndex], items[index]];
+          setFormData({ ...formData, items: items.map((item, i) => ({ ...item, order: i })) });
+        };
+        return (
+          <>
+            <div className="space-y-2">
+              {(formData.items || []).map((item, index) => (
+                <div key={item.id} className="flex items-center gap-2">
+                  <div className="flex flex-col">
+                    <button type="button" onClick={() => moveTodoItem(index, -1)} disabled={index === 0} className="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"><ArrowUp size={12} /></button>
+                    <button type="button" onClick={() => moveTodoItem(index, 1)} disabled={index === (formData.items || []).length - 1} className="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"><ArrowDown size={12} /></button>
+                  </div>
+                  <input
+                    type="text"
+                    value={item.text}
+                    onChange={(e) => updateTodoItem(item.id, e.target.value)}
+                    placeholder="待办事项..."
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  />
+                  <button type="button" onClick={() => removeTodoItem(item.id)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"><X size={16} /></button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addTodoItem}
+              className="w-full py-2 border-2 border-dashed border-teal-300 rounded-lg text-teal-600 text-sm font-medium hover:bg-teal-50 transition-colors flex items-center justify-center gap-1"
+            >
+              <Plus size={16} /> 添加待办项
+            </button>
+          </>
+        );
       default:
         return (
           <>
             <div><label className="block text-sm text-gray-600 mb-1">内容</label><textarea value={formData.content || ''} onChange={(e) => setFormData({...formData, content: e.target.value})} rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" /></div>
-            <AttachmentUploader 
-              images={formData.images || []} 
+            <AttachmentUploader
+              images={formData.images || []}
               files={formData.files || []}
               onImagesChange={(images) => setFormData({...formData, images})}
               onFilesChange={(files) => setFormData({...formData, files})}
@@ -3854,9 +4041,445 @@ function useSaveData(data, isLoaded) {
   }, [data, isLoaded]);
 }
 
+// ==================== 钉到桌面视图 ====================
+
+function PinnedNoteView({ noteId }) {
+  const [note, setNote] = useState(null);
+  const [category, setCategory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editContent, setEditContent] = useState('');
+  const [editingTodoId, setEditingTodoId] = useState(null);
+  const saveTimer = useRef(null);
+
+  useEffect(() => {
+    const loadNote = async () => {
+      try {
+        if (window.electronAPI) {
+          const allData = await window.electronAPI.loadData();
+          if (allData) {
+            for (const key of Object.keys(allData)) {
+              if (key.startsWith('userData_') && allData[key].notes) {
+                const found = allData[key].notes.find(n => n.id === noteId);
+                if (found) {
+                  setNote(found);
+                  setEditContent(found.content || '');
+                  const cats = allData[key].categories || DEFAULT_CATEGORIES;
+                  setCategory(cats.find(c => c.id === found.categoryId) || null);
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('加载钉窗口数据失败:', err);
+      }
+      setLoading(false);
+    };
+    loadNote();
+  }, [noteId]);
+
+  useEffect(() => {
+    if (window.electronAPI?.onNoteDataUpdated) {
+      window.electronAPI.onNoteDataUpdated((data) => {
+        setNote(data);
+        if (data.content !== undefined) setEditContent(data.content);
+      });
+    }
+  }, []);
+
+  const syncToMain = (updates) => {
+    if (window.electronAPI?.updateNoteFromPinned) {
+      window.electronAPI.updateNoteFromPinned(noteId, updates);
+    }
+  };
+
+  const handleContentChange = (value) => {
+    setEditContent(value);
+    setNote(prev => ({ ...prev, content: value }));
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      syncToMain({ content: value });
+    }, 500);
+  };
+
+  const handleToggleTodo = (itemId) => {
+    if (!note || !note.items) return;
+    const updatedItems = note.items.map(item =>
+      item.id === itemId ? { ...item, completed: !item.completed } : item
+    );
+    setNote({ ...note, items: updatedItems });
+    syncToMain({ items: updatedItems });
+  };
+
+  const handleAddTodo = () => {
+    const newItem = { id: Date.now(), text: '', completed: false };
+    const updatedItems = [...(note.items || []), newItem];
+    setNote({ ...note, items: updatedItems });
+    syncToMain({ items: updatedItems });
+    setEditingTodoId(newItem.id);
+  };
+
+  const handleDeleteTodo = (itemId) => {
+    const updatedItems = (note.items || []).filter(item => item.id !== itemId);
+    setNote({ ...note, items: updatedItems });
+    syncToMain({ items: updatedItems });
+  };
+
+  const handleEditTodoText = (itemId, newText) => {
+    const updatedItems = (note.items || []).map(item =>
+      item.id === itemId ? { ...item, text: newText } : item
+    );
+    setNote({ ...note, items: updatedItems });
+    syncToMain({ items: updatedItems });
+    setEditingTodoId(null);
+  };
+
+  const handleClose = () => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      syncToMain({ content: editContent });
+    }
+    if (window.electronAPI?.unpinNote) {
+      window.electronAPI.unpinNote(noteId);
+    }
+    window.close();
+  };
+
+  if (loading) {
+    return (
+      <div className="w-full h-screen bg-white/95 rounded-2xl flex items-center justify-center">
+        <div className="text-gray-400 text-sm">加载中...</div>
+      </div>
+    );
+  }
+
+  if (!note) {
+    return (
+      <div className="w-full h-screen bg-white/95 rounded-2xl flex items-center justify-center">
+        <div className="text-gray-400 text-sm">便签不存在</div>
+      </div>
+    );
+  }
+
+  const colorClasses = COLOR_OPTIONS.find(c => c.name === category?.color) || COLOR_OPTIONS[0];
+  const iconMap = Object.fromEntries(ICON_OPTIONS.map(i => [i.name, i.icon]));
+  const Icon = iconMap[category?.iconName] || StickyNote;
+
+  const renderPinnedContent = () => {
+    const noteType = category?.noteType;
+    switch (noteType) {
+      case 'todolist':
+        const items = note.items || [];
+        const completed = items.filter(i => i.completed).length;
+        return (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-2 mb-2">
+              <div className="flex-1 bg-teal-100 rounded-full h-2 overflow-hidden">
+                <div className="bg-teal-500 h-full rounded-full transition-all" style={{ width: items.length > 0 ? `${(completed / items.length) * 100}%` : '0%' }} />
+              </div>
+              <span className="text-xs font-medium text-teal-700">{completed}/{items.length}</span>
+            </div>
+            {items.map(item => (
+              <div
+                key={item.id}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 group transition-colors"
+              >
+                <div
+                  onClick={() => handleToggleTodo(item.id)}
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 cursor-pointer transition-colors ${item.completed ? 'bg-teal-500 border-teal-500' : 'border-gray-300 hover:border-teal-400'}`}
+                >
+                  {item.completed && <Check size={10} className="text-white" />}
+                </div>
+                {editingTodoId === item.id ? (
+                  <input
+                    autoFocus
+                    defaultValue={item.text}
+                    placeholder="输入待办事项..."
+                    onBlur={(e) => handleEditTodoText(item.id, e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleEditTodoText(item.id, e.target.value); if (e.key === 'Escape') setEditingTodoId(null); }}
+                    className="flex-1 text-sm border-none outline-none bg-white rounded px-1 ring-1 ring-teal-300 placeholder-gray-400 h-5 leading-5"
+                  />
+                ) : (
+                  <span
+                    onClick={() => !item.completed && setEditingTodoId(item.id)}
+                    className={`text-sm flex-1 h-5 leading-5 px-1 ${item.completed ? 'line-through text-gray-400' : item.text ? 'text-gray-700 cursor-text' : 'text-gray-400 italic cursor-text'}`}
+                  >{item.text || '输入待办事项...'}</span>
+                )}
+                <button
+                  onClick={() => handleDeleteTodo(item.id)}
+                  className="w-4 h-4 rounded-full hover:bg-red-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={10} className="text-red-400" />
+                </button>
+              </div>
+            ))}
+            <div className="flex items-center justify-center px-2 pt-1">
+              <button
+                onClick={handleAddTodo}
+                className="w-6 h-6 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-500 flex items-center justify-center text-lg transition-colors"
+              >+</button>
+            </div>
+          </div>
+        );
+      case 'password':
+        return (
+          <div className="space-y-2 px-2 text-sm">
+            <div className="flex justify-between bg-gray-50 rounded-lg px-3 py-2">
+              <span className="text-gray-500">账号</span>
+              <span className="text-gray-700 font-mono truncate max-w-[150px]">{note.username}</span>
+            </div>
+            <div className="flex justify-between bg-gray-50 rounded-lg px-3 py-2">
+              <span className="text-gray-500">密码</span>
+              <span className="text-gray-700 font-mono">••••••••</span>
+            </div>
+          </div>
+        );
+      case 'link':
+        return (
+          <div className="px-2">
+            <div className="bg-blue-50 rounded-lg px-3 py-2">
+              <span className="text-blue-600 text-sm font-mono break-all">{note.url}</span>
+            </div>
+          </div>
+        );
+      case 'date':
+        const days = Math.ceil((new Date(note.date) - new Date()) / (1000 * 60 * 60 * 24));
+        const isPast = days < 0;
+        return (
+          <div className="px-2 text-center py-4">
+            <div className={`text-3xl font-bold ${isPast ? 'text-gray-400' : days <= 30 ? 'text-red-500' : 'text-green-500'}`}>
+              {Math.abs(days)}
+            </div>
+            <div className="text-gray-500 text-sm mt-1">{isPast ? '天前已过期' : days === 0 ? '就是今天' : '天后到期'}</div>
+            <div className="text-gray-400 text-xs mt-2">{note.date}</div>
+          </div>
+        );
+      default:
+        return (
+          <div className="px-2 h-full">
+            <textarea
+              value={editContent}
+              onChange={(e) => handleContentChange(e.target.value)}
+              className="w-full h-full min-h-[80px] text-gray-700 text-sm resize-none border-none outline-none bg-transparent"
+              placeholder="输入内容..."
+              style={{ WebkitAppRegion: 'no-drag' }}
+            />
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="w-full h-screen flex flex-col bg-white/95 rounded-2xl overflow-hidden border border-gray-200 shadow-2xl">
+      {/* 标题栏 - 可拖拽 */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 shrink-0" style={{ WebkitAppRegion: 'drag' }}>
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`w-6 h-6 rounded-md ${colorClasses.bg} flex items-center justify-center shrink-0`}>
+            <Icon size={12} className={colorClasses.text} />
+          </div>
+          <span className="text-sm font-medium text-gray-800 truncate">{note.title}</span>
+        </div>
+        <button
+          onClick={handleClose}
+          className="p-1 hover:bg-gray-100 rounded transition-colors shrink-0"
+          style={{ WebkitAppRegion: 'no-drag' }}
+          title="取消钉住"
+        >
+          <X size={14} className="text-gray-400" />
+        </button>
+      </div>
+      {/* 内容区 */}
+      <div className="flex-1 overflow-y-auto py-2">
+        {renderPinnedContent()}
+      </div>
+    </div>
+  );
+}
+
+// ==================== Link Dock 视图 ====================
+
+function LinkDockView({ side }) {
+  const [links, setLinks] = useState([]);
+  const [expanded, setExpanded] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const collapseTimer = useRef(null);
+
+  useEffect(() => {
+    if (window.electronAPI?.onDockLinksUpdated) {
+      window.electronAPI.onDockLinksUpdated((data) => {
+        setLinks(data);
+      });
+    }
+    if (window.electronAPI?.onDockIconUpdated) {
+      window.electronAPI.onDockIconUpdated(({ linkId, favicon }) => {
+        setLinks(prev => prev.map(l => l.id === linkId ? { ...l, favicon } : l));
+      });
+    }
+  }, []);
+
+  const handleMouseEnter = () => {
+    if (collapseTimer.current) {
+      clearTimeout(collapseTimer.current);
+      collapseTimer.current = null;
+    }
+    window.electronAPI?.dockSetMouseIgnore?.(false);
+    if (!expanded) {
+      setExpanded(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    collapseTimer.current = setTimeout(() => {
+      setExpanded(false);
+      window.electronAPI?.dockSetMouseIgnore?.(true);
+    }, 300);
+  };
+
+  const handleLinkClick = (url) => {
+    if (window.electronAPI?.openExternal) {
+      window.electronAPI.openExternal(url);
+    }
+  };
+
+  const handleRemoveLink = (e, linkId) => {
+    e.stopPropagation();
+    setLinks(prev => {
+      const updated = prev.filter(l => l.id !== linkId);
+      if (updated.length === 0) {
+        window.electronAPI?.closeLinkDock?.();
+      }
+      return updated;
+    });
+    if (window.electronAPI?.removeDockLink) {
+      window.electronAPI.removeDockLink(linkId);
+    }
+  };
+
+  const handleContextMenu = (e, link) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (window.electronAPI?.showDockIconMenu) {
+      window.electronAPI.showDockIconMenu(link.id, link.url);
+    }
+  };
+
+  const handleDragStart = (e) => {
+    if (e.target.closest('button')) return;
+    e.preventDefault();
+    const startY = e.screenY;
+    let isDragging = false;
+    let clickTarget = e.target.closest('.dock-item');
+    window.electronAPI?.dockDragStart?.();
+    const onMove = (ev) => {
+      const deltaY = ev.screenY - startY;
+      if (!isDragging && Math.abs(deltaY) > 5) {
+        isDragging = true;
+      }
+      if (isDragging) {
+        window.electronAPI?.dockDragMove?.(deltaY);
+      }
+    };
+    const onUp = (ev) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      if (!isDragging && clickTarget) {
+        const url = clickTarget.dataset.url;
+        if (url) handleLinkClick(url);
+      }
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  return (
+    <div
+      className="relative w-full h-screen flex flex-col items-end justify-center pr-1"
+      style={{ cursor: 'default', pointerEvents: 'none' }}
+    >
+      <div
+        onMouseEnter={!collapsed ? handleMouseEnter : undefined}
+        onMouseLeave={!collapsed ? handleMouseLeave : undefined}
+        onMouseDown={!collapsed ? handleDragStart : undefined}
+        style={{ pointerEvents: 'auto' }}
+        className="flex flex-col items-end"
+      >
+      {collapsed ? (
+        <button
+          onClick={() => setCollapsed(false)}
+          className="w-6 h-10 rounded-l-lg bg-gray-900/70 backdrop-blur-sm flex items-center justify-center hover:bg-gray-800/80 transition-colors"
+          title="展开快捷栏"
+        >
+          <ChevronLeft size={14} className="text-white/80" />
+        </button>
+      ) : (
+        <>
+          <div className="flex flex-col items-end gap-2 rounded-2xl bg-gray-900/70 backdrop-blur-sm py-3 px-1.5">
+            {links.map(link => (
+              <div
+                key={link.id}
+                className="dock-item relative flex items-center cursor-pointer group"
+                title={link.title || link.url}
+                data-url={link.url}
+                onContextMenu={(e) => handleContextMenu(e, link)}
+              >
+                <div
+                  className="overflow-hidden flex items-center justify-end"
+                  style={{ width: expanded ? 142 : 0, transition: 'width 0.25s ease', opacity: expanded ? 1 : 0 }}
+                >
+                  <span className="text-sm text-white font-medium truncate pr-2" style={{ maxWidth: 138, textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>{link.title || link.url}</span>
+                </div>
+                <div className="relative shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-white/90 flex items-center justify-center overflow-hidden group-hover:scale-110 transition-all" style={{ boxShadow: '3px 3px 6px rgba(0,0,0,0.4)' }}>
+                    {link.favicon ? (
+                      <img src={link.favicon} alt="" className="w-6 h-6" draggable="false" style={{ filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,0.3))' }} />
+                    ) : (
+                      <span className="text-blue-500 text-sm font-bold">{(link.title || 'L')[0].toUpperCase()}</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => handleRemoveLink(e, link.id)}
+                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-black/40 hover:bg-red-500 text-white/70 hover:text-white flex items-center justify-center text-[10px] leading-none opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                  >×</button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 h-6 flex items-center justify-end mr-2" style={{ width: 52, alignSelf: 'flex-end' }}>
+            <button
+              onClick={() => { setCollapsed(true); setExpanded(false); }}
+              className="w-6 h-6 rounded-full bg-gray-900/70 hover:bg-gray-800/80 text-white/70 flex items-center justify-center transition-all backdrop-blur-sm"
+              style={{ opacity: expanded ? 1 : 0, pointerEvents: expanded ? 'auto' : 'none', transition: 'opacity 0.2s ease' }}
+              title="收起快捷栏"
+            >
+              <ChevronRight size={12} />
+            </button>
+          </div>
+        </>
+      )}
+      </div>
+    </div>
+  );
+}
+
 // ==================== 主应用组件 ====================
 
-export default function InfoNotesApp() {
+// 入口组件：区分主窗口、钉窗口、Link Dock
+export default function App() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const pinnedNoteId = urlParams.get('pinned');
+  const isDock = urlParams.get('dock');
+  const dockSide = urlParams.get('side') || 'right';
+  if (pinnedNoteId) {
+    return <PinnedNoteView noteId={Number(pinnedNoteId)} />;
+  }
+  if (isDock) {
+    return <LinkDockView side={dockSide} />;
+  }
+  return <InfoNotesApp />;
+}
+
+function InfoNotesApp() {
   // 数据加载状态
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   
@@ -3917,6 +4540,9 @@ export default function InfoNotesApp() {
   // 关闭行为弹窗状态
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [rememberCloseChoice, setRememberCloseChoice] = useState(true);
+
+  // 钉到桌面状态
+  const [pinnedNotes, setPinnedNotes] = useState([]);
   
   // 类别拖拽排序状态
   const [draggedCategory, setDraggedCategory] = useState(null);
@@ -3937,6 +4563,38 @@ export default function InfoNotesApp() {
     if (window.electronAPI?.onShowCloseDialog) {
       window.electronAPI.onShowCloseDialog(() => {
         setIsCloseDialogOpen(true);
+      });
+    }
+  }, []);
+
+  // 监听钉窗口事件
+  useEffect(() => {
+    if (window.electronAPI?.onPinnedWindowClosed) {
+      window.electronAPI.onPinnedWindowClosed(({ noteId }) => {
+        setPinnedNotes(prev => prev.filter(p => p.noteId !== noteId));
+      });
+    }
+    if (window.electronAPI?.onPinnedWindowMoved) {
+      window.electronAPI.onPinnedWindowMoved(({ noteId, bounds }) => {
+        setPinnedNotes(prev => prev.map(p => p.noteId === noteId ? { ...p, ...bounds } : p));
+      });
+    }
+    if (window.electronAPI?.onNoteUpdatedFromPinned) {
+      window.electronAPI.onNoteUpdatedFromPinned(({ noteId, updates }) => {
+        setNotes(prev => prev.map(n => n.id === noteId ? { ...n, ...updates } : n));
+        if (detailNote && detailNote.id === noteId) {
+          setDetailNote(prev => ({ ...prev, ...updates }));
+        }
+      });
+    }
+    if (window.electronAPI?.onDockClosed) {
+      window.electronAPI.onDockClosed(() => {
+        setPinnedNotes(prev => prev.filter(p => !p.dock));
+      });
+    }
+    if (window.electronAPI?.onDockLinkRemoved) {
+      window.electronAPI.onDockLinkRemoved((linkId) => {
+        setPinnedNotes(prev => prev.filter(p => !(p.dock && p.noteId === linkId)));
       });
     }
   }, []);
@@ -4217,12 +4875,30 @@ export default function InfoNotesApp() {
           setNotes(userData.notes || []);
           setPin(userData.pin || null);
           setUserAvatar(userData.avatar || null);
+          const savedPinned = userData.pinnedNotes || [];
+          setPinnedNotes(savedPinned);
+          // 恢复钉窗口
+          if (window.electronAPI?.pinNote) {
+            const regularPinned = savedPinned.filter(p => !p.dock);
+            const dockPinned = savedPinned.filter(p => p.dock);
+            for (const p of regularPinned) {
+              window.electronAPI.pinNote(p.noteId, p.x != null ? { x: p.x, y: p.y, width: p.width, height: p.height } : null);
+            }
+            if (dockPinned.length > 0 && window.electronAPI.openLinkDock) {
+              const allNotes = userData.notes || [];
+              const dockLinks = dockPinned.map(p => allNotes.find(n => n.id === p.noteId)).filter(Boolean);
+              if (dockLinks.length > 0) {
+                window.electronAPI.openLinkDock(dockLinks, 'right');
+              }
+            }
+          }
         } else {
           // 新用户，使用默认数据
           setCategories(DEFAULT_CATEGORIES);
           setNotes([]);
           setPin(null);
           setUserAvatar(null);
+          setPinnedNotes([]);
         }
       } catch (error) {
         console.error('加载用户数据失败:', error);
@@ -4278,7 +4954,7 @@ export default function InfoNotesApp() {
     
     saveUserDataRef.current = setTimeout(async () => {
       const userKey = `userData_${currentUser.id}`;
-      const userData = { categories, notes, pin, avatar: userAvatar };
+      const userData = { categories, notes, pin, avatar: userAvatar, pinnedNotes };
       
       try {
         if (window.electronAPI) {
@@ -4297,7 +4973,7 @@ export default function InfoNotesApp() {
         clearTimeout(saveUserDataRef.current);
       }
     };
-  }, [categories, notes, pin, userAvatar, currentUser, isDataLoaded]);
+  }, [categories, notes, pin, userAvatar, pinnedNotes, currentUser, isDataLoaded]);
   
   // 打开便签详情
   const handleOpenDetail = (note) => {
@@ -4481,7 +5157,12 @@ export default function InfoNotesApp() {
     if (window.electronAPI?.clearSession) {
       window.electronAPI.clearSession();
     }
-    
+    // 关闭所有钉窗口
+    if (window.electronAPI?.closeAllPinned) {
+      window.electronAPI.closeAllPinned();
+    }
+    setPinnedNotes([]);
+
     setCurrentUser(null);
     // 重置用户数据
     setCategories(DEFAULT_CATEGORIES);
@@ -4492,6 +5173,43 @@ export default function InfoNotesApp() {
     setIsDetailOpen(false);
     setActiveCategory('all');
     setSearchQuery('');
+  };
+
+  // 钉到桌面
+  const handlePinNote = async (note) => {
+    if (!window.electronAPI) return;
+
+    const noteCategory = categories.find(c => c.id === note.categoryId);
+    const isLinkType = noteCategory?.noteType === 'link';
+    console.log('[pin] note:', note.title, 'category:', noteCategory, 'isLinkType:', isLinkType);
+
+    if (isLinkType) {
+      const isDocked = pinnedNotes.find(p => p.noteId === note.id && p.dock);
+      if (isDocked) {
+        const updated = pinnedNotes.filter(p => p.noteId !== note.id);
+        setPinnedNotes(updated);
+        const dockLinks = updated.filter(p => p.dock).map(p => notes.find(n => n.id === p.noteId)).filter(Boolean);
+        if (dockLinks.length === 0) {
+          await window.electronAPI.closeLinkDock?.();
+        } else {
+          await window.electronAPI.updateLinkDock?.(dockLinks);
+        }
+      } else {
+        const newPinned = [...pinnedNotes, { noteId: note.id, dock: true }];
+        setPinnedNotes(newPinned);
+        const dockLinks = newPinned.filter(p => p.dock).map(p => notes.find(n => n.id === p.noteId)).filter(Boolean);
+        await window.electronAPI.openLinkDock?.(dockLinks, 'right');
+      }
+    } else {
+      const existing = pinnedNotes.find(p => p.noteId === note.id);
+      if (existing) {
+        await window.electronAPI.unpinNote(note.id);
+        setPinnedNotes(prev => prev.filter(p => p.noteId !== note.id));
+      } else {
+        await window.electronAPI.pinNote(note.id, null);
+        setPinnedNotes(prev => [...prev, { noteId: note.id }]);
+      }
+    }
   };
   
   // 头像上传处理
@@ -4918,16 +5636,18 @@ export default function InfoNotesApp() {
             const category = categories.find(c => c.id === note.categoryId);
             if (!category) return null;
             return (
-              <NoteCard 
-                key={note.id} 
-                note={note} 
-                category={category} 
-                onEdit={(n) => { setEditingNote(n); setIsNoteModalOpen(true); }} 
-                onDelete={(id) => setNotes(notes.filter(n => n.id !== id))} 
+              <NoteCard
+                key={note.id}
+                note={note}
+                category={category}
+                onEdit={(n) => { setEditingNote(n); setIsNoteModalOpen(true); }}
+                onDelete={(id) => setNotes(notes.filter(n => n.id !== id))}
                 onUpdateStatus={(id, status) => setNotes(notes.map(n => n.id === id ? {...n, status} : n))}
                 onOpenDetail={handleOpenDetail}
                 pin={pin}
                 onSetPin={setPin}
+                onPinNote={handlePinNote}
+                isPinned={pinnedNotes.some(p => p.noteId === note.id)}
               />
             );
           })}
@@ -4959,13 +5679,25 @@ export default function InfoNotesApp() {
             setDetailNote({...detailNote, status});
           }
         }}
+        onUpdateNote={(id, updates) => {
+          setNotes(notes.map(n => n.id === id ? {...n, ...updates} : n));
+          if (detailNote && detailNote.id === id) {
+            setDetailNote({...detailNote, ...updates});
+          }
+        }}
         onEdit={(n) => { 
           setEditingNote(n); 
           setIsNoteModalOpen(true); 
         }}
         onDelete={(id) => {
           setNotes(notes.filter(n => n.id !== id));
+          if (window.electronAPI?.unpinNote) {
+            window.electronAPI.unpinNote(id);
+          }
+          setPinnedNotes(prev => prev.filter(p => p.noteId !== id));
         }}
+        onPinNote={handlePinNote}
+        isPinned={detailNote ? pinnedNotes.some(p => p.noteId === detailNote.id) : false}
       />
       
       {/* 私密便签PIN验证弹窗 */}

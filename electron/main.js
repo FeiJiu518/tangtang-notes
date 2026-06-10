@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Menu, Tray, screen, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, Tray, screen, clipboard, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -488,6 +488,10 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   clearCurrentSession();
   stopHeartbeat();
+  for (const [, win] of pinnedWindows) {
+    if (!win.isDestroyed()) win.close();
+  }
+  pinnedWindows.clear();
 });
 
 // ==================== IPC 处理 ====================
@@ -526,6 +530,131 @@ ipcMain.handle('open-external', async (event, url) => {
   } catch (error) {
     return { success: false, error: error.message };
   }
+});
+
+const https = require('https');
+const http = require('http');
+
+const faviconCache = new Map();
+
+async function fetchFaviconBase64(url) {
+  try {
+    const { origin } = new URL(url);
+    if (faviconCache.has(origin)) return faviconCache.get(origin);
+    const result = await _fetchFaviconBase64(url);
+    if (result) faviconCache.set(origin, result);
+    return result;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function _fetchFaviconBase64(url) {
+  try {
+    const { origin } = new URL(url);
+    const fetchUrl = (targetUrl, redirects = 0) => new Promise((resolve, reject) => {
+      if (redirects > 3) { reject(new Error('Too many redirects')); return; }
+      const mod = targetUrl.startsWith('https') ? https : http;
+      const req = mod.get(targetUrl, {
+        timeout: 5000,
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+      }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          const next = res.headers.location.startsWith('http') ? res.headers.location : `${new URL(targetUrl).origin}${res.headers.location}`;
+          fetchUrl(next, redirects + 1).then(resolve).catch(reject);
+          return;
+        }
+        if (res.statusCode !== 200) { reject(new Error('Not found')); return; }
+        const ct = res.headers['content-type'] || '';
+        if (ct.includes('text/html')) { reject(new Error('HTML response')); return; }
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+    });
+
+    // 尝试解析HTML找到真正的favicon链接
+    const fetchHtmlFavicon = async () => {
+      const htmlBuf = await new Promise((resolve, reject) => {
+        const mod = origin.startsWith('https') ? https : http;
+        const req = mod.get(origin, {
+          timeout: 5000,
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+        }, (res) => {
+          if (res.statusCode !== 200) { reject(new Error('Not OK')); return; }
+          const chunks = [];
+          res.on('data', c => { chunks.push(c); if (Buffer.concat(chunks).length > 50000) { req.destroy(); resolve(Buffer.concat(chunks)); } });
+          res.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+      });
+      const html = htmlBuf.toString('utf8');
+      const match = html.match(/<link[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["']/i)
+        || html.match(/<link[^>]*href=["']([^"']+)["'][^>]*rel=["'](?:shortcut )?icon["']/i);
+      if (!match) return null;
+      let href = match[1];
+      if (href.startsWith('//')) href = 'https:' + href;
+      else if (href.startsWith('/')) href = origin + href;
+      else if (!href.startsWith('http')) href = origin + '/' + href;
+      const buf = await fetchUrl(href);
+      if (buf.length < 64) return null;
+      const ext = href.includes('.png') ? 'image/png' : href.includes('.svg') ? 'image/svg+xml' : 'image/x-icon';
+      return `data:${ext};base64,${buf.toString('base64')}`;
+    };
+
+    // 先试 /favicon.ico
+    try {
+      const buf = await fetchUrl(`${origin}/favicon.ico`);
+      if (buf.length >= 64) {
+        return `data:image/x-icon;base64,${buf.toString('base64')}`;
+      }
+    } catch {}
+
+    // 回退：解析HTML找icon链接
+    try {
+      const result = await fetchHtmlFavicon();
+      if (result) return result;
+    } catch {}
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function enrichLinksWithFavicons(links) {
+  return Promise.all(links.map(async link => {
+    if (link.favicon) return link;
+    if (link.customFavicon) return { ...link, favicon: link.customFavicon };
+    const favicon = await fetchFaviconBase64(link.url).catch(() => null);
+    return favicon ? { ...link, favicon } : link;
+  }));
+}
+
+ipcMain.handle('fetch-favicon', async (event, url) => {
+  const favicon = await fetchFaviconBase64(url);
+  return favicon ? { success: true, favicon } : { success: false };
+});
+
+ipcMain.handle('select-icon-file', async () => {
+  const win = BrowserWindow.getFocusedWindow() || mainWindow;
+  const result = await dialog.showOpenDialog(win, {
+    title: '选择图标图片',
+    filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'ico', 'svg', 'webp'] }],
+    properties: ['openFile'],
+  });
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false };
+  }
+  const filePath = result.filePaths[0];
+  const ext = path.extname(filePath).slice(1).toLowerCase();
+  const mime = ext === 'svg' ? 'image/svg+xml' : ext === 'ico' ? 'image/x-icon' : `image/${ext}`;
+  const buf = fs.readFileSync(filePath);
+  const base64 = `data:${mime};base64,${buf.toString('base64')}`;
+  return { success: true, favicon: base64 };
 });
 
 ipcMain.handle('expand-window', async () => {
@@ -623,4 +752,295 @@ ipcMain.handle('update-collapse-height', async (event, height) => {
     width: bounds.width,
     height: clampedHeight
   }, true);
+});
+
+// ==================== 钉到桌面功能 ====================
+
+const pinnedWindows = new Map(); // noteId -> BrowserWindow
+
+ipcMain.handle('pin-note', async (event, { noteId, bounds }) => {
+  if (pinnedWindows.has(noteId)) {
+    pinnedWindows.get(noteId).focus();
+    return { success: true };
+  }
+
+  const win = new BrowserWindow({
+    width: bounds?.width || 300,
+    height: bounds?.height || 360,
+    x: bounds?.x || undefined,
+    y: bounds?.y || undefined,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: true,
+    minimizable: false,
+    skipTaskbar: true,
+    minWidth: 200,
+    minHeight: 150,
+    icon: path.join(__dirname, '../public/icon.ico'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+    hasShadow: true,
+  });
+
+  if (process.env.NODE_ENV === 'development' || process.argv.includes('--dev')) {
+    win.loadURL(`http://localhost:5174?pinned=${noteId}`);
+  } else {
+    win.loadFile(path.join(__dirname, '../dist/index.html'), {
+      query: { pinned: String(noteId) }
+    });
+  }
+
+  win.on('moved', () => {
+    const b = win.getBounds();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('pinned-window-moved', { noteId, bounds: b });
+    }
+  });
+
+  win.on('resized', () => {
+    const b = win.getBounds();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('pinned-window-moved', { noteId, bounds: b });
+    }
+  });
+
+  win.on('closed', () => {
+    pinnedWindows.delete(noteId);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('pinned-window-closed', { noteId });
+    }
+  });
+
+  pinnedWindows.set(noteId, win);
+  return { success: true };
+});
+
+ipcMain.handle('unpin-note', async (event, noteId) => {
+  const win = pinnedWindows.get(noteId);
+  if (win && !win.isDestroyed()) {
+    win.close();
+  }
+  pinnedWindows.delete(noteId);
+  return { success: true };
+});
+
+ipcMain.handle('get-pinned-windows', async () => {
+  return Array.from(pinnedWindows.keys());
+});
+
+ipcMain.handle('update-note-from-pinned', async (event, { noteId, updates }) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('note-updated-from-pinned', { noteId, updates });
+  }
+  return { success: true };
+});
+
+ipcMain.handle('notify-pinned-windows', async (event, { noteId, noteData }) => {
+  const win = pinnedWindows.get(noteId);
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('note-data-updated', noteData);
+  }
+  return { success: true };
+});
+
+ipcMain.handle('close-all-pinned', async () => {
+  for (const [, win] of pinnedWindows) {
+    if (!win.isDestroyed()) win.close();
+  }
+  pinnedWindows.clear();
+  return { success: true };
+});
+
+// ==================== Link Dock ====================
+
+const DOCK_WIDTH_COLLAPSED = 56;
+const DOCK_WIDTH_EXPANDED = 210;
+let linkDockWindow = null;
+
+function createLinkDock(links, side) {
+  if (linkDockWindow && !linkDockWindow.isDestroyed()) {
+    enrichLinksWithFavicons(links).then(enriched => {
+      linkDockWindow.webContents.send('dock-links-updated', enriched);
+    });
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const workArea = primaryDisplay.workArea;
+    const height = Math.min(links.length * 52 + 80, workArea.height * 0.8);
+    const bounds = linkDockWindow.getBounds();
+    const y = workArea.y + Math.floor((workArea.height - height) / 2);
+    linkDockWindow.setBounds({ ...bounds, y, height }, true);
+    return;
+  }
+
+  const virtualBounds = getVirtualScreenBounds();
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const workArea = primaryDisplay.workArea;
+  const itemHeight = 52;
+  const height = Math.min(links.length * itemHeight + 80, workArea.height * 0.8);
+  const y = workArea.y + Math.floor((workArea.height - height) / 2);
+  const x = side === 'left' ? virtualBounds.minX : virtualBounds.maxX - DOCK_WIDTH_EXPANDED;
+
+  linkDockWindow = new BrowserWindow({
+    width: DOCK_WIDTH_EXPANDED,
+    height,
+    x,
+    y,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    minimizable: false,
+    skipTaskbar: true,
+    hasShadow: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  const dockSide = side || 'right';
+  if (process.env.NODE_ENV === 'development' || process.argv.includes('--dev')) {
+    linkDockWindow.loadURL(`http://localhost:5174?dock=true&side=${dockSide}`);
+  } else {
+    linkDockWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
+      query: { dock: 'true', side: dockSide },
+    });
+  }
+
+  linkDockWindow.on('closed', () => {
+    linkDockWindow = null;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('dock-closed');
+    }
+  });
+
+  linkDockWindow.webContents.on('did-finish-load', async () => {
+    if (linkDockWindow && !linkDockWindow.isDestroyed()) {
+      linkDockWindow.setIgnoreMouseEvents(true, { forward: true });
+      const basicLinks = links.map(l => ({
+        id: l.id,
+        url: l.url || l.content,
+        title: l.title || l.url || l.content,
+        favicon: l.customFavicon || l.favicon || null,
+      }));
+      linkDockWindow.webContents.send('dock-links-updated', basicLinks);
+      linkDockWindow.show();
+      linkDockWindow.setAlwaysOnTop(true, 'screen-saver');
+      const enriched = await enrichLinksWithFavicons(basicLinks);
+      if (linkDockWindow && !linkDockWindow.isDestroyed()) {
+        linkDockWindow.webContents.send('dock-links-updated', enriched);
+      }
+    }
+  });
+}
+
+ipcMain.handle('open-link-dock', async (event, { links, side }) => {
+  createLinkDock(links, side || 'right');
+  return { success: true };
+});
+
+ipcMain.handle('close-link-dock', async () => {
+  if (linkDockWindow && !linkDockWindow.isDestroyed()) linkDockWindow.close();
+  return { success: true };
+});
+
+ipcMain.handle('remove-dock-link', async (event, linkId) => {
+  if (!linkDockWindow || linkDockWindow.isDestroyed()) return { success: false };
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('dock-link-removed', linkId);
+  }
+  return { success: true };
+});
+
+ipcMain.handle('show-dock-icon-menu', async (event, { linkId, url }) => {
+  if (!linkDockWindow || linkDockWindow.isDestroyed()) return;
+  const menu = Menu.buildFromTemplate([
+    {
+      label: '更换图标',
+      click: async () => {
+        const result = await dialog.showOpenDialog(linkDockWindow, {
+          title: '选择图标图片',
+          filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'ico', 'svg', 'webp'] }],
+          properties: ['openFile'],
+        });
+        if (!result.canceled && result.filePaths.length > 0) {
+          const filePath = result.filePaths[0];
+          const ext = path.extname(filePath).slice(1).toLowerCase();
+          const mime = ext === 'svg' ? 'image/svg+xml' : ext === 'ico' ? 'image/x-icon' : `image/${ext}`;
+          const buf = fs.readFileSync(filePath);
+          const base64 = `data:${mime};base64,${buf.toString('base64')}`;
+          linkDockWindow.webContents.send('dock-icon-updated', { linkId, favicon: base64 });
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('dock-icon-updated', { linkId, favicon: base64 });
+          }
+        }
+      }
+    },
+    {
+      label: '重新获取图标',
+      click: async () => {
+        const favicon = await fetchFaviconBase64(url);
+        if (favicon) {
+          linkDockWindow.webContents.send('dock-icon-updated', { linkId, favicon });
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('dock-icon-updated', { linkId, favicon });
+          }
+        }
+      }
+    },
+  ]);
+  menu.popup({ window: linkDockWindow });
+});
+
+let dockDragStartY = 0;
+ipcMain.handle('dock-drag-start', async () => {
+  if (!linkDockWindow || linkDockWindow.isDestroyed()) return;
+  dockDragStartY = linkDockWindow.getBounds().y;
+});
+
+ipcMain.handle('dock-drag-move', async (event, deltaY) => {
+  if (!linkDockWindow || linkDockWindow.isDestroyed()) return;
+  const bounds = linkDockWindow.getBounds();
+  linkDockWindow.setBounds({ ...bounds, y: dockDragStartY + deltaY });
+});
+
+ipcMain.handle('dock-set-mouse-ignore', async (event, ignore) => {
+  if (!linkDockWindow || linkDockWindow.isDestroyed()) return;
+  if (ignore) {
+    linkDockWindow.setIgnoreMouseEvents(true, { forward: true });
+  } else {
+    linkDockWindow.setIgnoreMouseEvents(false);
+  }
+});
+
+ipcMain.handle('update-link-dock', async (event, { links }) => {
+  if (!linkDockWindow || linkDockWindow.isDestroyed()) return { success: false };
+  const enriched = await enrichLinksWithFavicons(links);
+  linkDockWindow.webContents.send('dock-links-updated', enriched);
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const workArea = primaryDisplay.workArea;
+  const height = Math.min(links.length * 52 + 80, workArea.height * 0.8);
+  const bounds = linkDockWindow.getBounds();
+  const y = workArea.y + Math.floor((workArea.height - height) / 2);
+  linkDockWindow.setBounds({ ...bounds, y, height }, true);
+  return { success: true };
+});
+
+ipcMain.handle('expand-dock', async () => {
+  if (!linkDockWindow || linkDockWindow.isDestroyed()) return;
+  const bounds = linkDockWindow.getBounds();
+  const newX = bounds.x - (DOCK_WIDTH_EXPANDED - bounds.width);
+  linkDockWindow.setBounds({ x: newX, y: bounds.y, width: DOCK_WIDTH_EXPANDED, height: bounds.height }, true);
+});
+
+ipcMain.handle('collapse-dock', async () => {
+  if (!linkDockWindow || linkDockWindow.isDestroyed()) return;
+  const bounds = linkDockWindow.getBounds();
+  const newX = bounds.x + (bounds.width - DOCK_WIDTH_COLLAPSED);
+  linkDockWindow.setBounds({ x: newX, y: bounds.y, width: DOCK_WIDTH_COLLAPSED, height: bounds.height }, true);
 });

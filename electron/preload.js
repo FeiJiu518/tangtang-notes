@@ -11,6 +11,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // 打开外部链接
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+
+  // 获取网站favicon
+  fetchFavicon: (url) => ipcRenderer.invoke('fetch-favicon', url),
+  selectIconFile: () => ipcRenderer.invoke('select-icon-file'),
   
   // 窗口收缩/展开
   expandWindow: () => ipcRenderer.invoke('expand-window'),
@@ -37,6 +41,53 @@ contextBridge.exposeInMainWorld('electronAPI', {
   confirmClose: (behavior) => ipcRenderer.invoke('confirm-close', behavior),
   onShowCloseDialog: (callback) => {
     ipcRenderer.on('show-close-dialog', () => callback());
+  },
+
+  // 钉到桌面
+  pinNote: (noteId, bounds) => ipcRenderer.invoke('pin-note', { noteId, bounds }),
+  unpinNote: (noteId) => ipcRenderer.invoke('unpin-note', noteId),
+  getPinnedWindows: () => ipcRenderer.invoke('get-pinned-windows'),
+  closeAllPinned: () => ipcRenderer.invoke('close-all-pinned'),
+  notifyPinnedWindows: (noteId, noteData) => ipcRenderer.invoke('notify-pinned-windows', { noteId, noteData }),
+  onPinnedWindowClosed: (callback) => {
+    ipcRenderer.on('pinned-window-closed', (event, data) => callback(data));
+  },
+  onPinnedWindowMoved: (callback) => {
+    ipcRenderer.on('pinned-window-moved', (event, data) => callback(data));
+  },
+  // 钉窗口专用：接收数据更新
+  onNoteDataUpdated: (callback) => {
+    ipcRenderer.on('note-data-updated', (event, data) => callback(data));
+  },
+  // 钉窗口专用：向主窗口发送更新
+  updateNoteFromPinned: (noteId, updates) => ipcRenderer.invoke('update-note-from-pinned', { noteId, updates }),
+  // 主窗口专用：接收钉窗口的更新
+  onNoteUpdatedFromPinned: (callback) => {
+    ipcRenderer.on('note-updated-from-pinned', (event, data) => callback(data));
+  },
+
+  // Link Dock
+  openLinkDock: (links, side) => ipcRenderer.invoke('open-link-dock', { links, side }),
+  closeLinkDock: () => ipcRenderer.invoke('close-link-dock'),
+  updateLinkDock: (links) => ipcRenderer.invoke('update-link-dock', { links }),
+  removeDockLink: (linkId) => ipcRenderer.invoke('remove-dock-link', linkId),
+  showDockIconMenu: (linkId, url) => ipcRenderer.invoke('show-dock-icon-menu', { linkId, url }),
+  expandDock: () => ipcRenderer.invoke('expand-dock'),
+  collapseDock: () => ipcRenderer.invoke('collapse-dock'),
+  dockDragStart: () => ipcRenderer.invoke('dock-drag-start'),
+  dockDragMove: (deltaY) => ipcRenderer.invoke('dock-drag-move', deltaY),
+  dockSetMouseIgnore: (ignore) => ipcRenderer.invoke('dock-set-mouse-ignore', ignore),
+  onDockLinksUpdated: (callback) => {
+    ipcRenderer.on('dock-links-updated', (event, data) => callback(data));
+  },
+  onDockIconUpdated: (callback) => {
+    ipcRenderer.on('dock-icon-updated', (event, data) => callback(data));
+  },
+  onDockClosed: (callback) => {
+    ipcRenderer.on('dock-closed', () => callback());
+  },
+  onDockLinkRemoved: (callback) => {
+    ipcRenderer.on('dock-link-removed', (event, linkId) => callback(linkId));
   },
 
   // 平台信息
