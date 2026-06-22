@@ -1942,7 +1942,7 @@ function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDeta
           <h3 className="font-semibold text-gray-800">{note.title}</h3>
         </div>
         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-          {window.electronAPI && (
+          {window.electronAPI && ['simple', 'todolist', 'link'].includes(category?.noteType) && (
             <button onClick={() => onPinNote && onPinNote(note)} className={`p-1.5 rounded-md transition-colors ${isPinned ? 'bg-teal-100 text-teal-600' : 'hover:bg-gray-100 text-gray-400'}`} title={isPinned ? '取消钉住' : '钉到桌面'}>
               <Pin size={14} />
             </button>
@@ -2416,7 +2416,7 @@ function NoteDetailModal({ isOpen, onClose, note, category, onUpdateStatus, onUp
               </div>
             </div>
             <div className="flex items-center gap-1">
-              {window.electronAPI && (
+              {window.electronAPI && ['simple', 'todolist', 'link'].includes(category?.noteType) && (
                 <button
                   onClick={() => onPinNote && onPinNote(note)}
                   className={`p-2 rounded-lg transition-colors ${isPinned ? 'bg-teal-100 text-teal-600' : 'hover:bg-gray-100 text-gray-500'}`}
