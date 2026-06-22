@@ -4416,6 +4416,23 @@ function LinkDockView({ side }) {
     }, 300);
   };
 
+  useEffect(() => {
+    if (!expanded || collapsed) return;
+    const interval = setInterval(() => {
+      const el = document.querySelector('[data-dock-panel]');
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const isOutside = window.mouseX < rect.left || window.mouseX > rect.right || window.mouseY < rect.top || window.mouseY > rect.bottom;
+      if (isOutside) {
+        setExpanded(false);
+        window.electronAPI?.dockSetMouseIgnore?.(true);
+      }
+    }, 1000);
+    const trackMouse = (e) => { window.mouseX = e.clientX; window.mouseY = e.clientY; };
+    document.addEventListener('mousemove', trackMouse);
+    return () => { clearInterval(interval); document.removeEventListener('mousemove', trackMouse); };
+  }, [expanded, collapsed]);
+
   const handleLinkClick = (url) => {
     if (window.electronAPI?.openExternal) {
       window.electronAPI.openExternal(url);
@@ -4478,6 +4495,7 @@ function LinkDockView({ side }) {
       style={{ cursor: 'default', pointerEvents: 'none' }}
     >
       <div
+        data-dock-panel
         onMouseEnter={!collapsed ? handleMouseEnter : undefined}
         onMouseLeave={!collapsed ? handleMouseLeave : undefined}
         onMouseDown={!collapsed ? handleDragStart : undefined}
