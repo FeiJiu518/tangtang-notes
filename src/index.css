@@ -16,26 +16,24 @@ html, body, #root {
   background: transparent;
 }
 
-/* 允许文字选择 */
 body {
   -webkit-user-select: text;
   user-select: text;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 可选择的文字区域 */
 .selectable {
   -webkit-user-select: text;
   user-select: text;
   cursor: text;
 }
 
-/* 不可选择的区域（按钮等） */
 button, .no-select {
   -webkit-user-select: none;
   user-select: none;
 }
 
-/* 标题栏拖拽区域 */
 .titlebar-drag {
   -webkit-app-region: drag;
 }
@@ -44,10 +42,10 @@ button, .no-select {
   -webkit-app-region: no-drag;
 }
 
-/* 滚动条样式 */
+/* 滚动条 — Apple 风格细滚动条 */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -55,36 +53,34 @@ button, .no-select {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+  background: rgba(88,86,214,0.15);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: rgba(88,86,214,0.3);
 }
 
-/* 平滑滚动 */
 html {
   scroll-behavior: smooth;
 }
 
-/* 输入框焦点样式优化 */
 input:focus, textarea:focus, select:focus {
   outline: none;
 }
 
-/* 动画 */
+/* 弹窗动画 */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }

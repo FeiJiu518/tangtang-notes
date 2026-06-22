@@ -69,24 +69,24 @@ const ICON_OPTIONS = [
 
 // 可选颜色
 const COLOR_OPTIONS = [
-  { name: 'gray', bg: 'bg-gray-100', text: 'text-gray-600', ring: 'ring-gray-400' },
-  { name: 'red', bg: 'bg-red-100', text: 'text-red-600', ring: 'ring-red-400' },
-  { name: 'orange', bg: 'bg-orange-100', text: 'text-orange-600', ring: 'ring-orange-400' },
-  { name: 'amber', bg: 'bg-amber-100', text: 'text-amber-600', ring: 'ring-amber-400' },
-  { name: 'yellow', bg: 'bg-yellow-100', text: 'text-yellow-600', ring: 'ring-yellow-400' },
-  { name: 'lime', bg: 'bg-lime-100', text: 'text-lime-600', ring: 'ring-lime-400' },
-  { name: 'green', bg: 'bg-green-100', text: 'text-green-600', ring: 'ring-green-400' },
-  { name: 'emerald', bg: 'bg-emerald-100', text: 'text-emerald-600', ring: 'ring-emerald-400' },
-  { name: 'teal', bg: 'bg-teal-100', text: 'text-teal-600', ring: 'ring-teal-400' },
-  { name: 'cyan', bg: 'bg-cyan-100', text: 'text-cyan-600', ring: 'ring-cyan-400' },
-  { name: 'sky', bg: 'bg-sky-100', text: 'text-sky-600', ring: 'ring-sky-400' },
-  { name: 'blue', bg: 'bg-blue-100', text: 'text-blue-600', ring: 'ring-blue-400' },
-  { name: 'indigo', bg: 'bg-indigo-100', text: 'text-indigo-600', ring: 'ring-indigo-400' },
-  { name: 'violet', bg: 'bg-violet-100', text: 'text-violet-600', ring: 'ring-violet-400' },
-  { name: 'purple', bg: 'bg-purple-100', text: 'text-purple-600', ring: 'ring-purple-400' },
-  { name: 'fuchsia', bg: 'bg-fuchsia-100', text: 'text-fuchsia-600', ring: 'ring-fuchsia-400' },
-  { name: 'pink', bg: 'bg-pink-100', text: 'text-pink-600', ring: 'ring-pink-400' },
-  { name: 'rose', bg: 'bg-rose-100', text: 'text-rose-600', ring: 'ring-rose-400' },
+  { name: 'gray', bg: 'bg-gray-100', text: 'text-gray-600', ring: 'ring-gray-400', border: 'border-gray-300' },
+  { name: 'red', bg: 'bg-red-100', text: 'text-red-600', ring: 'ring-red-400', border: 'border-red-300' },
+  { name: 'orange', bg: 'bg-orange-100', text: 'text-orange-600', ring: 'ring-orange-400', border: 'border-orange-300' },
+  { name: 'amber', bg: 'bg-amber-100', text: 'text-amber-600', ring: 'ring-amber-400', border: 'border-amber-300' },
+  { name: 'yellow', bg: 'bg-yellow-100', text: 'text-yellow-600', ring: 'ring-yellow-400', border: 'border-yellow-300' },
+  { name: 'lime', bg: 'bg-lime-100', text: 'text-lime-600', ring: 'ring-lime-400', border: 'border-lime-300' },
+  { name: 'green', bg: 'bg-green-100', text: 'text-green-600', ring: 'ring-green-400', border: 'border-green-300' },
+  { name: 'emerald', bg: 'bg-emerald-100', text: 'text-emerald-600', ring: 'ring-emerald-400', border: 'border-emerald-300' },
+  { name: 'teal', bg: 'bg-teal-100', text: 'text-teal-600', ring: 'ring-teal-400', border: 'border-teal-300' },
+  { name: 'cyan', bg: 'bg-cyan-100', text: 'text-cyan-600', ring: 'ring-cyan-400', border: 'border-cyan-300' },
+  { name: 'sky', bg: 'bg-sky-100', text: 'text-sky-600', ring: 'ring-sky-400', border: 'border-sky-300' },
+  { name: 'blue', bg: 'bg-blue-100', text: 'text-blue-600', ring: 'ring-blue-400', border: 'border-blue-300' },
+  { name: 'indigo', bg: 'bg-indigo-100', text: 'text-indigo-600', ring: 'ring-indigo-400', border: 'border-indigo-300' },
+  { name: 'violet', bg: 'bg-violet-100', text: 'text-violet-600', ring: 'ring-violet-400', border: 'border-violet-300' },
+  { name: 'purple', bg: 'bg-purple-100', text: 'text-purple-600', ring: 'ring-purple-400', border: 'border-purple-300' },
+  { name: 'fuchsia', bg: 'bg-fuchsia-100', text: 'text-fuchsia-600', ring: 'ring-fuchsia-400', border: 'border-fuchsia-300' },
+  { name: 'pink', bg: 'bg-pink-100', text: 'text-pink-600', ring: 'ring-pink-400', border: 'border-pink-300' },
+  { name: 'rose', bg: 'bg-rose-100', text: 'text-rose-600', ring: 'ring-rose-400', border: 'border-rose-300' },
 ];
 
 // 便签类型配置（含默认图标和颜色）
@@ -758,7 +758,7 @@ function AuthPage({ onLogin, registeredUsers, setRegisteredUsers, savedAccounts,
   };
   
   return (
-    <div className="h-screen bg-transparent flex flex-col p-1">
+    <div className="h-screen bg-transparent flex flex-col p-2">
       {/* 圆角容器 - 细边框 */}
       <div
         className="h-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col rounded-2xl overflow-hidden border border-gray-200/80"
@@ -1698,7 +1698,7 @@ function PinModal({ isOpen, onClose, onSuccess, pin, setPin: setGlobalPin }) {
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -1832,14 +1832,25 @@ function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDeta
       case 'expense':
         const statusConfig = EXPENSE_STATUS.find(s => s.id === note.status) || EXPENSE_STATUS[0];
         const StatusIcon = statusConfig.icon;
+        const currentStatusIdx = EXPENSE_STATUS.findIndex(s => s.id === note.status);
+        const handleStatusClick = (e) => {
+          e.stopPropagation();
+          if (currentStatusIdx < EXPENSE_STATUS.length - 1) {
+            onUpdateStatus(note.id, EXPENSE_STATUS[currentStatusIdx + 1].id);
+          }
+        };
         return (
-          <div className="space-y-2 text-sm">
+          <div className="space-y-1 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold text-gray-800">¥{note.amount?.toLocaleString()}</span>
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${statusConfig.bg}`}>
+              <button
+                onClick={handleStatusClick}
+                className={`flex items-center gap-1 px-2 py-1 rounded-full transition-colors ${statusConfig.bg} ${currentStatusIdx < EXPENSE_STATUS.length - 1 ? 'hover:opacity-80 cursor-pointer' : 'cursor-default'}`}
+                title={currentStatusIdx < EXPENSE_STATUS.length - 1 ? `点击切换为「${EXPENSE_STATUS[currentStatusIdx + 1].name}」` : '已完成报销'}
+              >
                 <StatusIcon size={12} className={statusConfig.color} />
                 <span className={`text-xs font-medium ${statusConfig.color}`}>{statusConfig.name}</span>
-              </div>
+              </button>
             </div>
             {note.purchaseDate && (
               <div className="text-xs text-gray-500">
@@ -1920,12 +1931,12 @@ function NoteCard({ note, category, onEdit, onDelete, onUpdateStatus, onOpenDeta
   return (
     <div
       onClick={handleCardClick}
-      className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
+      className="bg-white rounded-apple-lg p-5 shadow-apple hover:shadow-apple-md transition-shadow cursor-pointer"
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-2">
-          <div className={`w-8 h-8 rounded-lg ${colorClasses.bg} flex items-center justify-center relative shrink-0`}>
-            {favicon ? <img src={favicon} className="w-5 h-5 rounded" alt="" /> : <Icon size={16} className={colorClasses.text} />}
+          <div className={`w-8 h-8 rounded-lg ${colorClasses.bg} flex items-center justify-center relative shrink-0 overflow-hidden`}>
+            {note.icon ? <img src={note.icon} className="w-full h-full object-cover" alt="" /> : favicon ? <img src={favicon} className="w-5 h-5 rounded" alt="" /> : <Icon size={16} className={colorClasses.text} />}
             {isPrivate && <div className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 rounded-full flex items-center justify-center"><Lock size={8} className="text-white" /></div>}
           </div>
           <h3 className="font-semibold text-gray-800">{note.title}</h3>
@@ -2351,32 +2362,44 @@ function NoteDetailModal({ isOpen, onClose, note, category, onUpdateStatus, onUp
   
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
         <div 
-          className="bg-white rounded-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-fadeIn"
+          className="bg-white rounded-apple-xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-fadeIn shadow-apple-lg"
           onClick={(e) => e.stopPropagation()}
         >
           {/* 头部 */}
           <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              {category.noteType === 'link' ? (
+              {(category.noteType === 'link' || category.noteType === 'expense') ? (
                 <div
-                  className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:shadow transition-all group relative"
+                  className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:shadow transition-all group relative overflow-hidden"
                   onClick={async () => {
                     if (window.electronAPI?.selectIconFile) {
                       const result = await window.electronAPI.selectIconFile();
                       if (result.success) {
-                        setFavicon(result.favicon);
-                        onUpdateNote(note.id, { customFavicon: result.favicon });
+                        if (category.noteType === 'link') {
+                          setFavicon(result.favicon);
+                          onUpdateNote(note.id, { customFavicon: result.favicon });
+                        } else {
+                          onUpdateNote(note.id, { icon: result.favicon });
+                        }
                       }
                     }
                   }}
                   title="点击更换图标"
                 >
-                  {favicon ? (
-                    <img src={favicon} alt="" className="w-6 h-6" draggable="false" />
+                  {category.noteType === 'link' ? (
+                    favicon ? (
+                      <img src={favicon} alt="" className="w-6 h-6" draggable="false" />
+                    ) : (
+                      <Icon size={20} className={colorClasses.text} />
+                    )
                   ) : (
-                    <Icon size={20} className={colorClasses.text} />
+                    note.icon ? (
+                      <img src={note.icon} alt="" className="w-full h-full object-cover" draggable="false" />
+                    ) : (
+                      <Icon size={20} className={colorClasses.text} />
+                    )
                   )}
                   <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shadow-sm">
                     <Edit3 size={8} className="text-white" />
@@ -2752,7 +2775,7 @@ function ProfileModal({ isOpen, onClose, currentUser, userAvatar, onChangeAvatar
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-sm mx-4 overflow-hidden animate-fadeIn" onClick={(e) => e.stopPropagation()}>
         {/* 顶部背景 */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-8 text-center relative">
@@ -2878,7 +2901,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm, currentUser }) {
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleClose}>
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={handleClose}>
       <div className="bg-white rounded-2xl w-full max-w-sm mx-4 p-6 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
         {step === 1 ? (
           <>
@@ -3239,8 +3262,8 @@ function CategoryModal({ isOpen, onClose, categories, onSave, onDelete, editingC
   const selectedColor = getColorClasses(color);
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-apple-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col overflow-hidden animate-fadeIn shadow-apple-lg">
         <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 flex-shrink-0">
           <h2 className="text-lg font-semibold">{editingCategory ? '编辑类别' : '新建类别'}</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X size={20} className="text-gray-500" /></button>
@@ -3346,7 +3369,7 @@ function CategoryModal({ isOpen, onClose, categories, onSave, onDelete, editingC
 }
 
 // 便签弹窗
-function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCategoryId }) {
+function NoteModal({ isOpen, onClose, onSave, onSaveTemplate, editingNote, categories, defaultCategoryId }) {
   const [categoryId, setCategoryId] = useState('');
   const [formData, setFormData] = useState({});
   const [isPrivate, setIsPrivate] = useState(false);
@@ -3591,6 +3614,35 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCa
       case 'expense':
         return (
           <>
+            <div className="flex items-center gap-3 mb-1">
+              <label className="block text-sm text-gray-600">图标</label>
+              <div
+                className="w-12 h-12 rounded-lg overflow-hidden bg-emerald-50 flex items-center justify-center cursor-pointer hover:opacity-80 border border-dashed border-emerald-200"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setFormData({ ...formData, icon: ev.target.result });
+                    reader.readAsDataURL(file);
+                  };
+                  input.click();
+                }}
+                title="点击上传图标"
+              >
+                {formData.icon ? (
+                  <img src={formData.icon} className="w-full h-full object-cover" />
+                ) : (
+                  <ImagePlus size={18} className="text-emerald-400" />
+                )}
+              </div>
+              {formData.icon && (
+                <button type="button" onClick={() => setFormData({ ...formData, icon: null })} className="text-xs text-gray-400 hover:text-red-500">移除</button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div><label className="block text-sm text-gray-600 mb-1">金额</label><input type="number" value={formData.amount || ''} onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00" /></div>
               <div><label className="block text-sm text-gray-600 mb-1">购买日期</label><input type="date" value={formData.purchaseDate || ''} onChange={(e) => setFormData({...formData, purchaseDate: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
@@ -3604,12 +3656,21 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCa
                 {EXPENSE_STATUS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
-            <AttachmentUploader 
-              images={formData.images || []} 
+            <AttachmentUploader
+              images={formData.images || []}
               files={formData.files || []}
               onImagesChange={(images) => setFormData({...formData, images})}
               onFilesChange={(files) => setFormData({...formData, files})}
             />
+            {onSaveTemplate && formData.title && (
+              <button
+                type="button"
+                onClick={() => onSaveTemplate({ name: formData.title, amount: formData.amount, paymentMethod: formData.paymentMethod, icon: formData.icon })}
+                className="w-full py-2 text-sm text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
+              >
+                保存为常用模板
+              </button>
+            )}
           </>
         );
       case 'membership':
@@ -3855,8 +3916,8 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCa
   };
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-apple-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col overflow-hidden animate-fadeIn shadow-apple-lg">
         <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 flex-shrink-0">
           <h2 className="text-lg font-semibold">{editingNote ? '编辑便签' : '新建便签'}</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X size={20} className="text-gray-500" /></button>
@@ -3892,31 +3953,50 @@ function NoteModal({ isOpen, onClose, onSave, editingNote, categories, defaultCa
 function ExpenseStats({ notes, categories }) {
   const expenseCategory = categories.find(c => c.noteType === 'expense');
   if (!expenseCategory) return null;
-  
+
   const expenseNotes = notes.filter(n => n.categoryId === expenseCategory.id);
   if (expenseNotes.length === 0) return null;
-  
+
   const stats = EXPENSE_STATUS.reduce((acc, status) => {
     const filtered = expenseNotes.filter(n => n.status === status.id);
     acc[status.id] = { count: filtered.length, amount: filtered.reduce((sum, n) => sum + (n.amount || 0), 0) };
     return acc;
   }, {});
-  
-  // 待报销金额包括：已申请未出票 + 未开发票 + 已开发票未报销
+
   const pendingAmount = (stats.applied?.amount || 0) + (stats.not_invoiced?.amount || 0) + (stats.invoiced?.amount || 0);
-  
-  if (pendingAmount === 0) return null;
-  
+
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+  const thisYear = `${now.getFullYear()}`;
+
+  const reimbursedNotes = expenseNotes.filter(n => n.status === 'reimbursed');
+  const monthAmount = reimbursedNotes.filter(n => n.purchaseDate?.startsWith(thisMonth)).reduce((s, n) => s + (n.amount || 0), 0);
+  const quarterAmount = reimbursedNotes.filter(n => n.purchaseDate && n.purchaseDate >= quarterStart.toISOString().split('T')[0]).reduce((s, n) => s + (n.amount || 0), 0);
+  const yearAmount = reimbursedNotes.filter(n => n.purchaseDate?.startsWith(thisYear)).reduce((s, n) => s + (n.amount || 0), 0);
+
+  if (pendingAmount === 0 && yearAmount === 0) return null;
+
   return (
-    <div className="mb-4 p-3 bg-emerald-50 rounded-lg">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-emerald-700">待报销金额</span>
-        <span className="text-lg font-bold text-emerald-700">¥{pendingAmount.toLocaleString()}</span>
-      </div>
-      <div className="flex gap-3 mt-2 text-xs flex-wrap">
+    <div className="mb-4 p-4 bg-white rounded-apple-lg shadow-apple space-y-2">
+      {pendingAmount > 0 && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-emerald-700">待报销</span>
+          <span className="text-lg font-bold text-emerald-700">¥{pendingAmount.toLocaleString()}</span>
+        </div>
+      )}
+      {yearAmount > 0 && (
+        <div className="flex gap-4 text-xs text-gray-600">
+          <span>本月已报 <b className="text-emerald-700">¥{monthAmount.toLocaleString()}</b></span>
+          <span>本季 <b className="text-emerald-700">¥{quarterAmount.toLocaleString()}</b></span>
+          <span>本年 <b className="text-emerald-700">¥{yearAmount.toLocaleString()}</b></span>
+        </div>
+      )}
+      <div className="flex gap-3 text-xs flex-wrap">
         {stats.applied?.count > 0 && <span className="text-purple-600">{stats.applied.count}笔已申请</span>}
         {stats.not_invoiced?.count > 0 && <span className="text-orange-600">{stats.not_invoiced.count}笔未开票</span>}
         {stats.invoiced?.count > 0 && <span className="text-blue-600">{stats.invoiced.count}笔待报销</span>}
+        {stats.reimbursed?.count > 0 && <span className="text-green-600">{stats.reimbursed.count}笔已报销</span>}
       </div>
     </div>
   );
@@ -4512,6 +4592,20 @@ function InfoNotesApp() {
   const [statusFilter, setStatusFilter] = useState(['all']);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef(null);
+
+  // 报销快速录入状态
+  const [quickExpenseAmount, setQuickExpenseAmount] = useState('');
+  const [quickExpenseTitle, setQuickExpenseTitle] = useState('');
+  const [quickExpenseDate, setQuickExpenseDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [quickExpenseIcon, setQuickExpenseIcon] = useState(null);
+
+  // 批量操作状态
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedNoteIds, setSelectedNoteIds] = useState(new Set());
+
+  // 报销模板
+  const [expenseTemplates, setExpenseTemplates] = useState([]);
+  const [showTemplateList, setShowTemplateList] = useState(false);
   
   // 详情视图状态
   const [detailNote, setDetailNote] = useState(null);
@@ -4877,6 +4971,7 @@ function InfoNotesApp() {
           setUserAvatar(userData.avatar || null);
           const savedPinned = userData.pinnedNotes || [];
           setPinnedNotes(savedPinned);
+          setExpenseTemplates(userData.expenseTemplates || []);
           // 恢复钉窗口
           if (window.electronAPI?.pinNote) {
             const regularPinned = savedPinned.filter(p => !p.dock);
@@ -4954,7 +5049,7 @@ function InfoNotesApp() {
     
     saveUserDataRef.current = setTimeout(async () => {
       const userKey = `userData_${currentUser.id}`;
-      const userData = { categories, notes, pin, avatar: userAvatar, pinnedNotes };
+      const userData = { categories, notes, pin, avatar: userAvatar, pinnedNotes, expenseTemplates };
       
       try {
         if (window.electronAPI) {
@@ -4973,7 +5068,7 @@ function InfoNotesApp() {
         clearTimeout(saveUserDataRef.current);
       }
     };
-  }, [categories, notes, pin, userAvatar, pinnedNotes, currentUser, isDataLoaded]);
+  }, [categories, notes, pin, userAvatar, pinnedNotes, expenseTemplates, currentUser, isDataLoaded]);
   
   // 打开便签详情
   const handleOpenDetail = (note) => {
@@ -5025,7 +5120,57 @@ function InfoNotesApp() {
     }
     return [];
   }, [activeCategoryType]);
-  
+
+  // 报销快速录入
+  const handleQuickExpenseAdd = () => {
+    if (!quickExpenseAmount || !quickExpenseTitle) return;
+    const expenseCat = categories.find(c => c.noteType === 'expense');
+    if (!expenseCat) return;
+    const newNote = {
+      id: Date.now(),
+      categoryId: expenseCat.id,
+      title: quickExpenseTitle,
+      amount: parseFloat(quickExpenseAmount),
+      purchaseDate: quickExpenseDate,
+      status: 'not_invoiced',
+      isPrivate: false,
+      icon: quickExpenseIcon || null,
+    };
+    setNotes([newNote, ...notes]);
+    setQuickExpenseAmount('');
+    setQuickExpenseTitle('');
+    setQuickExpenseIcon(null);
+    setQuickExpenseDate(new Date().toISOString().split('T')[0]);
+  };
+
+  // 批量操作
+  const handleBatchStatusChange = (newStatus) => {
+    setNotes(notes.map(n => selectedNoteIds.has(n.id) ? { ...n, status: newStatus } : n));
+    setBatchMode(false);
+    setSelectedNoteIds(new Set());
+  };
+  const handleBatchDelete = () => {
+    if (!window.confirm(`确定删除选中的 ${selectedNoteIds.size} 条记录？`)) return;
+    setNotes(notes.filter(n => !selectedNoteIds.has(n.id)));
+    setBatchMode(false);
+    setSelectedNoteIds(new Set());
+  };
+  const toggleSelectNote = (noteId) => {
+    setSelectedNoteIds(prev => {
+      const next = new Set(prev);
+      if (next.has(noteId)) next.delete(noteId);
+      else next.add(noteId);
+      return next;
+    });
+  };
+  const handleSelectAll = () => {
+    if (selectedNoteIds.size === filteredNotes.length) {
+      setSelectedNoteIds(new Set());
+    } else {
+      setSelectedNoteIds(new Set(filteredNotes.map(n => n.id)));
+    }
+  };
+
   // 处理筛选选项变化
   const handleFilterChange = (filterId) => {
     if (filterId === 'all') {
@@ -5370,15 +5515,15 @@ function InfoNotesApp() {
   }
 
   return (
-    <div className="h-screen bg-transparent flex flex-col p-1">
+    <div className="h-screen bg-transparent flex flex-col p-2">
       {/* 圆角容器 - 细边框 */}
       <div
-        className="h-full bg-gray-50 flex flex-col rounded-2xl overflow-hidden border border-gray-200/80"
+        className="h-full bg-apple-bg flex flex-col rounded-2xl overflow-hidden border border-gray-200/80"
       >
       {/* 自定义标题栏 - 仅在 Electron 中显示 */}
       {window.electronAPI && (
         <div 
-          className="h-8 bg-white border-b border-gray-200 flex items-center justify-between px-2 shrink-0 rounded-t-2xl"
+          className="h-8 bg-white/50 backdrop-blur flex items-center justify-between px-2 shrink-0 rounded-t-2xl"
           style={{ WebkitAppRegion: 'drag' }}
         >
           <div className="flex items-center gap-2">
@@ -5410,10 +5555,10 @@ function InfoNotesApp() {
       
       <div className="flex-1 flex overflow-hidden">
       {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-100 p-4 flex flex-col">
+      <div className="w-64 bg-white/80 backdrop-blur-md p-5 flex flex-col shadow-apple border-r border-indigo-50">
         {/* 用户信息 - 点击打开个人主页 */}
         <div 
-          className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg cursor-pointer hover:from-blue-100 hover:to-purple-100 transition-all"
+          className="mb-4 p-3 bg-gradient-to-r from-indigo-50/80 to-violet-50/60 rounded-apple cursor-pointer hover:from-indigo-100/80 hover:to-violet-100/60 transition-all"
           onClick={() => setIsProfileModalOpen(true)}
         >
           <div className="flex items-center justify-between">
@@ -5427,7 +5572,7 @@ function InfoNotesApp() {
                     className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-2 border-white shadow-sm">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center border-2 border-white shadow-sm">
                     <User size={16} className="text-white" />
                   </div>
                 )}
@@ -5461,11 +5606,11 @@ function InfoNotesApp() {
         )}
         
         <nav className="space-y-1 flex-1 overflow-y-auto">
-          <button onClick={() => { setActiveCategory('all'); setSortBy('created'); setSortOrder('desc'); setStatusFilter(['all']); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${activeCategory === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+          <button onClick={() => { setActiveCategory('all'); setSortBy('created'); setSortOrder('desc'); setStatusFilter(['all']); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-apple transition-colors ${activeCategory === 'all' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-100/60'}`}>
             <div className="flex items-center gap-2"><Folder size={18} /><span className="font-medium">全部</span></div>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === 'all' ? 'bg-blue-100' : 'bg-gray-100'}`}>{notes.length}</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === 'all' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100'}`}>{notes.length}</span>
           </button>
-          <div className="h-px bg-gray-100 my-2" />
+          <div className="h-px bg-indigo-100/60 my-2" />
           {categories.map((cat, index) => {
             const Icon = getIconComponent(cat.iconName);
             const colorClasses = getColorClasses(cat.color);
@@ -5510,13 +5655,13 @@ function InfoNotesApp() {
                   setDragOverCategory(null);
                 }}
               >
-                <button onClick={() => { setActiveCategory(cat.id); setSortBy('created'); setSortOrder('desc'); setStatusFilter(['all']); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${activeCategory === cat.id ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <button onClick={() => { setActiveCategory(cat.id); setSortBy('created'); setSortOrder('desc'); setStatusFilter(['all']); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-apple transition-colors ${activeCategory === cat.id ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-100/60'}`}>
                   <div className="flex items-center gap-2">
                     <GripVertical size={14} className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing" />
                     <div className={`w-6 h-6 rounded-md ${colorClasses.bg} flex items-center justify-center`}><Icon size={14} className={colorClasses.text} /></div>
                     <span className="font-medium text-sm">{cat.name}</span>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === cat.id ? 'bg-blue-100' : 'bg-gray-100'}`}>{count}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === cat.id ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100'}`}>{count}</span>
                 </button>
                 <button onClick={() => { setEditingCategory(cat); setIsCategoryModalOpen(true); }} className="absolute right-10 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all"><Edit3 size={12} className="text-gray-400" /></button>
               </div>
@@ -5524,20 +5669,20 @@ function InfoNotesApp() {
           })}
         </nav>
         
-        <div className="space-y-2 pt-4 border-t border-gray-100">
-          <button onClick={() => { setEditingCategory(null); setIsCategoryModalOpen(true); }} className="w-full text-gray-600 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"><Settings size={16} />管理类别</button>
-          <button onClick={() => { setEditingNote(null); setIsNoteModalOpen(true); }} className="w-full bg-blue-500 text-white py-2.5 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"><Plus size={18} />新建便签</button>
+        <div className="space-y-2 pt-4 border-t border-indigo-50">
+          <button onClick={() => { setEditingCategory(null); setIsCategoryModalOpen(true); }} className="w-full text-gray-600 py-2 rounded-apple font-medium hover:bg-indigo-50/60 transition-colors flex items-center justify-center gap-2"><Settings size={16} />管理类别</button>
+          <button onClick={() => { setEditingNote(null); setIsNoteModalOpen(true); }} className="w-full bg-indigo-500 text-white py-2.5 rounded-apple font-medium hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2 shadow-apple"><Plus size={18} />新建便签</button>
         </div>
       </div>
       
       {/* Main */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 p-7 overflow-y-auto">
         <div className="mb-6 flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder="搜索便签..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            <input type="text" placeholder="搜索便签..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-apple focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 focus:bg-white transition-colors" />
           </div>
-          <button onClick={() => { setEditingNote(null); setIsNoteModalOpen(true); }} className="p-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors" title="新建便签"><Plus size={18} /></button>
+          <button onClick={() => { setEditingNote(null); setIsNoteModalOpen(true); }} className="p-2.5 bg-indigo-500 text-white rounded-apple hover:bg-indigo-600 transition-colors shadow-apple" title="新建便签"><Plus size={18} /></button>
 
           {/* 排序按钮（仅报销记录和重要日期显示） */}
           {(activeCategoryType === 'expense' || activeCategoryType === 'date' || activeCategoryType === 'membership') && (
@@ -5546,7 +5691,7 @@ function InfoNotesApp() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none pl-9 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700 cursor-pointer"
+                  className="appearance-none pl-9 pr-8 py-2.5 bg-gray-100/60 border-0 rounded-apple focus:outline-none focus:ring-2 focus:ring-indigo-200 text-sm text-gray-700 cursor-pointer"
                 >
                   <option value="created">按创建时间</option>
                   <option value="date">
@@ -5561,7 +5706,7 @@ function InfoNotesApp() {
               {/* 升序/降序切换按钮 */}
               <button
                 onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-                className="flex items-center gap-1.5 px-3 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm text-gray-700"
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-100/60 border-0 rounded-apple hover:bg-gray-200/60 transition-colors text-sm text-gray-700"
                 title={sortOrder === 'desc' ? '当前：降序（新→旧）' : '当前：升序（旧→新）'}
               >
                 {sortOrder === 'desc' ? (
@@ -5581,10 +5726,10 @@ function InfoNotesApp() {
               <div className="relative" ref={filterRef}>
                 <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-2.5 border rounded-xl transition-colors text-sm ${
-                    statusFilter.includes('all') 
-                      ? 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50' 
-                      : 'bg-blue-50 border-blue-200 text-blue-600'
+                  className={`flex items-center gap-1.5 px-3 py-2.5 border-0 rounded-apple transition-colors text-sm ${
+                    statusFilter.includes('all')
+                      ? 'bg-gray-100/60 text-gray-700 hover:bg-gray-200/60'
+                      : 'bg-apple-blue/10 text-apple-blue'
                   }`}
                 >
                   <Filter size={16} className={statusFilter.includes('all') ? 'text-gray-400' : 'text-blue-500'} />
@@ -5598,7 +5743,7 @@ function InfoNotesApp() {
                 
                 {/* 筛选下拉菜单 */}
                 {isFilterOpen && (
-                  <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50 min-w-[160px]">
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-apple shadow-apple-md py-2 z-50 min-w-[160px]">
                     {/* 全部选项 */}
                     <label className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
                       <input
@@ -5629,35 +5774,196 @@ function InfoNotesApp() {
               </div>
             </div>
           )}
+
+          {activeCategoryType === 'expense' && !batchMode && (
+            <button
+              onClick={() => { setBatchMode(true); setSelectedNoteIds(new Set()); }}
+              className="px-3 py-2.5 bg-gray-100/60 border-0 rounded-apple hover:bg-gray-200/60 transition-colors text-sm text-gray-700"
+            >
+              批量
+            </button>
+          )}
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredNotes.map(note => {
-            const category = categories.find(c => c.id === note.categoryId);
-            if (!category) return null;
-            return (
-              <NoteCard
-                key={note.id}
-                note={note}
-                category={category}
-                onEdit={(n) => { setEditingNote(n); setIsNoteModalOpen(true); }}
-                onDelete={(id) => setNotes(notes.filter(n => n.id !== id))}
-                onUpdateStatus={(id, status) => setNotes(notes.map(n => n.id === id ? {...n, status} : n))}
-                onOpenDetail={handleOpenDetail}
-                pin={pin}
-                onSetPin={setPin}
-                onPinNote={handlePinNote}
-                isPinned={pinnedNotes.some(p => p.noteId === note.id)}
-              />
-            );
-          })}
-        </div>
+
+        {activeCategoryType === 'expense' && (
+          <div className="mb-4 flex items-center gap-2 p-4 bg-white rounded-apple-lg shadow-apple">
+            <input
+              type="number"
+              placeholder="金额"
+              value={quickExpenseAmount}
+              onChange={(e) => setQuickExpenseAmount(e.target.value)}
+              className="w-24 px-3 py-2 text-sm bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-apple-blue/20 focus:bg-white"
+            />
+            <input
+              type="text"
+              placeholder="标题（如：打车费）"
+              value={quickExpenseTitle}
+              onChange={(e) => setQuickExpenseTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleQuickExpenseAdd(); }}
+              className="flex-1 px-3 py-2 text-sm bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-apple-blue/20 focus:bg-white"
+            />
+            <input
+              type="date"
+              value={quickExpenseDate}
+              onChange={(e) => setQuickExpenseDate(e.target.value)}
+              className="px-3 py-2 text-sm bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-apple-blue/20 focus:bg-white"
+            />
+            <button
+              onClick={handleQuickExpenseAdd}
+              disabled={!quickExpenseAmount || !quickExpenseTitle}
+              className="px-4 py-2 text-sm font-medium text-white bg-apple-blue rounded-lg hover:bg-apple-blue/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            >
+              + 记一笔
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowTemplateList(!showTemplateList)}
+                className="px-3 py-2 text-sm border border-emerald-200 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors whitespace-nowrap"
+              >
+                模板
+              </button>
+              {showTemplateList && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[180px]">
+                  {expenseTemplates.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-gray-400">暂无模板，编辑报销记录时可保存为常用</p>
+                  ) : (
+                    expenseTemplates.sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0)).map(t => (
+                      <div key={t.id} className="group flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => {
+                          setQuickExpenseTitle(t.name);
+                          setQuickExpenseAmount(String(t.amount || ''));
+                          setQuickExpenseIcon(t.icon || null);
+                          setExpenseTemplates(expenseTemplates.map(et => et.id === t.id ? { ...et, usedCount: (et.usedCount || 0) + 1 } : et));
+                          setShowTemplateList(false);
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          {t.icon ? (
+                            <img src={t.icon} className="w-5 h-5 rounded object-cover" />
+                          ) : (
+                            <Receipt size={14} className="text-emerald-400" />
+                          )}
+                          <span className="text-sm text-gray-700">{t.name}</span>
+                          {t.amount && <span className="text-xs text-gray-400">¥{t.amount}</span>}
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setExpenseTemplates(expenseTemplates.filter(et => et.id !== t.id)); }}
+                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeCategoryType === 'expense' ? (() => {
+          const grouped = {};
+          filteredNotes.forEach(note => {
+            const month = note.purchaseDate ? note.purchaseDate.slice(0, 7) : '未知日期';
+            if (!grouped[month]) grouped[month] = [];
+            grouped[month].push(note);
+          });
+          const sortedMonths = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+          return sortedMonths.map(month => (
+            <div key={month} className="mb-6">
+              <h3 className="text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-3 pl-1">
+                {month === '未知日期' ? '未知日期' : `${month.replace('-', '年')}月`}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {grouped[month].map(note => {
+                  const category = categories.find(c => c.id === note.categoryId);
+                  if (!category) return null;
+                  if (batchMode) {
+                    return (
+                      <div key={note.id} className="flex items-start gap-2" onClick={() => toggleSelectNote(note.id)}>
+                        <input
+                          type="checkbox"
+                          checked={selectedNoteIds.has(note.id)}
+                          onChange={() => toggleSelectNote(note.id)}
+                          className="mt-4 w-4 h-4 shrink-0 rounded border-gray-300 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <div className="flex-1">
+                          <NoteCard note={note} category={category} onEdit={() => {}} onDelete={() => {}} onUpdateStatus={() => {}} onOpenDetail={() => {}} pin={pin} onSetPin={() => {}} onPinNote={() => {}} isPinned={false} />
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <NoteCard
+                      key={note.id}
+                      note={note}
+                      category={category}
+                      onEdit={(n) => { setEditingNote(n); setIsNoteModalOpen(true); }}
+                      onDelete={(id) => setNotes(notes.filter(n => n.id !== id))}
+                      onUpdateStatus={(id, status) => setNotes(notes.map(n => n.id === id ? {...n, status} : n))}
+                      onOpenDetail={handleOpenDetail}
+                      pin={pin}
+                      onSetPin={setPin}
+                      onPinNote={handlePinNote}
+                      isPinned={pinnedNotes.some(p => p.noteId === note.id)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ));
+        })() : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredNotes.map(note => {
+              const category = categories.find(c => c.id === note.categoryId);
+              if (!category) return null;
+              return (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  category={category}
+                  onEdit={(n) => { setEditingNote(n); setIsNoteModalOpen(true); }}
+                  onDelete={(id) => setNotes(notes.filter(n => n.id !== id))}
+                  onUpdateStatus={(id, status) => setNotes(notes.map(n => n.id === id ? {...n, status} : n))}
+                  onOpenDetail={handleOpenDetail}
+                  pin={pin}
+                  onSetPin={setPin}
+                  onPinNote={handlePinNote}
+                  isPinned={pinnedNotes.some(p => p.noteId === note.id)}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {batchMode && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3 bg-white/90 backdrop-blur-md rounded-apple-lg shadow-apple-lg z-50">
+            <button onClick={handleSelectAll} className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              {selectedNoteIds.size === filteredNotes.length ? '取消全选' : '全选'}
+            </button>
+            <span className="text-sm text-gray-500">已选 {selectedNoteIds.size} 项</span>
+            <select
+              onChange={(e) => { if (e.target.value) handleBatchStatusChange(e.target.value); e.target.value = ''; }}
+              className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none"
+              defaultValue=""
+            >
+              <option value="" disabled>改状态</option>
+              {EXPENSE_STATUS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <button onClick={handleBatchDelete} disabled={selectedNoteIds.size === 0} className="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 disabled:opacity-40 transition-colors">
+              删除
+            </button>
+            <button onClick={() => { setBatchMode(false); setSelectedNoteIds(new Set()); }} className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              取消
+            </button>
+          </div>
+        )}
         
         {filteredNotes.length === 0 && <div className="text-center py-12"><StickyNote size={48} className="mx-auto text-gray-300 mb-4" /><p className="text-gray-500">暂无便签</p></div>}
       </div>
       </div>
       
-      <NoteModal isOpen={isNoteModalOpen} onClose={() => { setIsNoteModalOpen(false); setEditingNote(null); }} onSave={(note) => { if (editingNote) setNotes(notes.map(n => n.id === note.id ? note : n)); else setNotes([note, ...notes]); setEditingNote(null); }} editingNote={editingNote} categories={categories} defaultCategoryId={activeCategory !== 'all' ? activeCategory : null} />
+      <NoteModal isOpen={isNoteModalOpen} onClose={() => { setIsNoteModalOpen(false); setEditingNote(null); }} onSave={(note) => { if (editingNote) setNotes(notes.map(n => n.id === note.id ? note : n)); else setNotes([note, ...notes]); setEditingNote(null); }} onSaveTemplate={(tpl) => { if (!expenseTemplates.some(t => t.name === tpl.name)) setExpenseTemplates([...expenseTemplates, { ...tpl, id: Date.now(), usedCount: 0 }]); }} editingNote={editingNote} categories={categories} defaultCategoryId={activeCategory !== 'all' ? activeCategory : null} />
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }} categories={categories} onSave={(cat) => { const exists = categories.find(c => c.id === cat.id); if (exists) setCategories(categories.map(c => c.id === cat.id ? cat : c)); else setCategories([...categories, cat]); setEditingCategory(null); }} onDelete={(id) => { setCategories(categories.filter(c => c.id !== id)); setNotes(notes.filter(n => n.categoryId !== id)); if (activeCategory === id) setActiveCategory('all'); }} editingCategory={editingCategory} />
       
       {/* 提醒弹窗 */}
